@@ -1,12 +1,12 @@
-package pl.kiosel.rosacore.nms.v26_2_R1;
+package pl.kiosel.rosacore.nms.v26_3_R1;
 
 import pl.kiosel.rosacore.nms.api.NMS;
 import pl.kiosel.rosacore.nms.api.anvil.CustomAnvilFactory;
 import pl.kiosel.rosacore.nms.api.server.NmsServer;
 import pl.kiosel.rosacore.nms.api.tablist.TabListService;
-import pl.kiosel.rosacore.nms.v26_2_R1.anvil.NMSCustomAnvilFactory;
-import pl.kiosel.rosacore.nms.v26_2_R1.server.ServerImpl;
-import pl.kiosel.rosacore.nms.v26_2_R1.tablist.NMSTabListService;
+import pl.kiosel.rosacore.nms.v26_3_R1.anvil.NMSCustomAnvilFactory;
+import pl.kiosel.rosacore.nms.v26_3_R1.server.ServerImpl;
+import pl.kiosel.rosacore.nms.v26_3_R1.tablist.NMSTabListService;
 
 public final class NmsImpl implements NMS {
 

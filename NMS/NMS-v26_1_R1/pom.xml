@@ -6,13 +6,15 @@
     <parent>
         <groupId>pl.kiosel.rosacore</groupId>
         <artifactId>rosacore-parent</artifactId>
-        <version>0.1.0</version>
+        <version>0.2.1</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>rosacore-nms-v26_2_R1</artifactId>
+    <artifactId>rosacore-nms-v26_1_R1</artifactId>
 
     <properties>
-        <nms.server.version>26.2-R0.1-SNAPSHOT</nms.server.version>
+        <java.version>25</java.version>
+        <java.release>8</java.release>
+        <nms.server.version>26.1.2-R0.1-SNAPSHOT</nms.server.version>
     </properties>
 
     <dependencies>

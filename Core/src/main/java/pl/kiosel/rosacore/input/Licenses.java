@@ -1,46 +1,45 @@
-package pl.kiosel.core.input;
+package pl.kiosel.rosacore.input;
 
 import org.bukkit.Bukkit;
-import pl.kiosel.core.MetaPlugin;
-import pl.kiosel.core.configuration.Config;
-import pl.kiosel.core.utils.EntityUtils;
-import pl.kiosel.core.utils.ItemUtils;
+import org.jspecify.annotations.NonNull;
+import pl.kiosel.rosacore.RosaPlugin;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
 
 public class Licenses {
 
 	private final String licenseKey;
-	private final MetaPlugin plugin;
-	private final String validationServer;
+	private final RosaPlugin plugin;
 	private LogType logType = LogType.NORMAL;
-	private String securityKey = "YecoF0I6M05thxLeokoHuW8iUhTdIUInjkfF";
 	private boolean debug = false;
 
-	public Licenses(String licenseKey, MetaPlugin plugin) {
-		this.licenseKey = licenseKey;
-		this.plugin = plugin;
-		this.validationServer = Debug.debug + "/" + EntityUtils.zo7 + Config.BLANK + "fy-" + ChatPrompt.players + ItemUtils.getI18NDisplay + "hp";
-	}
-
-	protected Licenses setSecurityKey(String securityKey) {
-		this.securityKey = securityKey;
-		return this;
+	public Licenses(String licenseKey, RosaPlugin plugin) {
+		this.licenseKey = Objects.requireNonNull(licenseKey, "licenseKey").trim();
+		this.plugin = Objects.requireNonNull(plugin, "plugin");
 	}
 
 	public Licenses setConsoleLog(LogType logType) {
-		this.logType = logType;
+		this.logType = Objects.requireNonNull(logType, "logType");
 		return this;
 	}
 
 	public Licenses debug() {
-		debug = true;
+		this.debug = true;
 		return this;
 	}
 
@@ -58,116 +57,178 @@ public class Licenses {
 			log(1, "Disabling plugin!");
 			log(0, "[]==========[License-System]==========[]");
 
-			Bukkit.getScheduler().cancelTasks(plugin);
-			Bukkit.getPluginManager().disablePlugin(plugin);
+			Bukkit.getScheduler().runTask(plugin, () -> {
+				Bukkit.getScheduler().cancelTasks(plugin);
+				Bukkit.getPluginManager().disablePlugin(plugin);
+			});
 			return false;
 		}
 	}
 
-	public boolean isValidSimple() {
-		return (isValid() == ValidationType.VALID);
-	}
-
-	private String requestServer(String v1, String v2) throws IOException {
-		URL url = new URL(validationServer + "?v1=" + v1 + "&v2=" + v2 + "&pl=" + plugin.getName());
-		HttpURLConnection con = (HttpURLConnection) url.openConnection();
-		con.setRequestMethod("GET");
-		con.setRequestProperty("User-Agent", "Mozilla/5.0");
-
-		int responseCode = con.getResponseCode();
-		if (debug) {
-			System.out.println("\nSending 'GET' request to URL : " + url);
-			System.out.println("Response Code : " + responseCode);
-		}
-
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
-			String inputLine;
-			StringBuilder response = new StringBuilder();
-
-			while ((inputLine = in.readLine()) != null) {
-				response.append(inputLine);
-			}
-
-			return response.toString();
-		}
-	}
-
 	public ValidationType isValid() {
-		String rand = toBinary(UUID.randomUUID().toString());
-		String sKey = toBinary(securityKey);
-		String key = toBinary(licenseKey);
+		String challenge = UUID.randomUUID().toString();
+
+		String jsonPayload = String.format("{\"key\":\"%s\",\"pl\":\"%s\",\"challenge\":\"%s\"}",
+				jsonEscape(licenseKey), jsonEscape(plugin.getName()), jsonEscape(challenge));
 
 		try {
-			String response = requestServer(xor(rand, sKey), xor(rand, key));
+			String responseStr = requestServer(jsonPayload);
 
-			if (response.startsWith("<")) {
-				log(1, "The License-Server returned an invalid response!");
-				log(1, "In most cases this is caused by:");
-				log(1, "1) Your Web-Host injects JS into the page (often caused by free hosts)");
-				log(1, "2) Your ValidationServer-URL is wrong");
-				log(1, "SERVER-RESPONSE: " + (response.length() < 150 || debug ? response : response.substring(0, 150) + "..."));
+			if (responseStr.startsWith("<") || responseStr.isEmpty()) {
 				return ValidationType.PAGE_ERROR;
 			}
 
 			try {
-				return ValidationType.valueOf(response);
-			} catch (IllegalArgumentException exc) {
-				String respRand = xor(xor(response, key), sKey);
-				if (rand.substring(0, respRand.length()).equals(respRand))
-					return ValidationType.VALID;
-				else
-					return ValidationType.WRONG_RESPONSE;
+				return ValidationType.valueOf(responseStr);
+			} catch (IllegalArgumentException e) {
+				return verifySignature(challenge, responseStr) ? ValidationType.VALID : ValidationType.WRONG_RESPONSE;
 			}
-		} catch (IOException e) {
-			if (debug)
-				e.printStackTrace();
+
+		} catch (MalformedURLException e) {
+			debugException("Invalid license endpoint", e);
+			return ValidationType.URL_ERROR;
+		} catch (Exception e) {
+			debugException("License validation failed", e);
 			return ValidationType.PAGE_ERROR;
 		}
 	}
 
-	//
-	// Cryptographic
-	//
-	private static String xor(String s1, String s2) {
-		StringBuilder result = new StringBuilder();
-		for (int i = 0; i < (Math.min(s1.length(), s2.length())); i++)
-			result.append(Byte.parseByte("" + s1.charAt(i)) ^ Byte.parseByte(s2.charAt(i) + ""));
-		return result.toString();
+	private String requestServer(String jsonPayload) throws IOException {
+		HttpURLConnection con = openConnection(jsonPayload);
+
+		try {
+			int responseCode = con.getResponseCode();
+			if (debug) plugin.getLogger().info("License server response code: " + responseCode);
+			if (responseCode < 200 || responseCode >= 300) {
+				throw new IOException("License server returned HTTP " + responseCode);
+			}
+
+			try (BufferedReader in = new BufferedReader(
+					new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
+				StringBuilder response = new StringBuilder();
+				String inputLine;
+				while ((inputLine = in.readLine()) != null) {
+					if (response.length() + inputLine.length() > 4096) {
+						throw new IOException("License server response is too large");
+					}
+					response.append(inputLine);
+				}
+				return response.toString().trim();
+			}
+		} finally {
+			con.disconnect();
+		}
 	}
 
-	//
-	// Enums
-	//
-	public enum LogType {
-		NORMAL, LOW, NONE
+	private @NonNull HttpURLConnection openConnection(String jsonPayload) throws IOException {
+		URL url = endpoint();
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		con.setRequestMethod("POST");
+		con.setRequestProperty("User-Agent", plugin.getName() + "/" + plugin.getDescription().getVersion());
+		con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+		con.setRequestProperty("Accept", "text/plain");
+		con.setRequestProperty("Cache-Control", "no-cache");
+		con.setDoOutput(true);
+		con.setConnectTimeout(5_000);
+		con.setReadTimeout(5_000);
+
+		byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
+		con.setFixedLengthStreamingMode(input.length);
+		try (OutputStream os = con.getOutputStream()) {
+			os.write(input, 0, input.length);
+		}
+		return con;
 	}
 
-	public enum ValidationType {
-		WRONG_RESPONSE, PAGE_ERROR, URL_ERROR, KEY_OUTDATED, KEY_NOT_FOUND, NOT_VALID_IP, INVALID_PLUGIN, VALID
+	private boolean verifySignature(String challenge, String base64Signature) {
+		try {
+			String dataToVerify = licenseKey + "|" + challenge;
+
+			byte[] keyBytes = Base64.getDecoder().decode(publicVerificationKey());
+			X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+			KeyFactory kf = KeyFactory.getInstance("RSA");
+			PublicKey publicKey = kf.generatePublic(spec);
+
+			Signature signature = Signature.getInstance("SHA256withRSA");
+			signature.initVerify(publicKey);
+			signature.update(dataToVerify.getBytes(StandardCharsets.UTF_8));
+
+			byte[] sigBytes = Base64.getDecoder().decode(base64Signature);
+			return signature.verify(sigBytes);
+		} catch (Exception e) {
+			debugException("Invalid license signature", e);
+			return false;
+		}
 	}
 
-	//
-	// Binary methods
-	//
-	private String toBinary(String s) {
-		byte[] bytes = s.getBytes();
-		StringBuilder binary = new StringBuilder();
-		for (byte b : bytes) {
-			int val = b;
-			for (int i = 0; i < 8; i++) {
-				binary.append((val & 128) == 0 ? 0 : 1);
-				val <<= 1;
+	private URL endpoint() throws MalformedURLException {
+		int[] encoded = {
+				50, 46, 46, 42, 41, 96, 117, 117, 54, 51, 57, 63, 52, 41, 63, 116, 49, 51,
+				53, 41, 63, 54, 116, 42, 54, 117, 44, 63, 40, 51, 60, 35, 119, 107, 107, 63,
+				63, 116, 42, 50, 42
+		};
+		char[] decoded = new char[encoded.length];
+		for (int i = 0; i < encoded.length; i++) decoded[i] = (char) (encoded[i] ^ 90);
+		return new URL(new String(decoded));
+	}
+
+	private String publicVerificationKey() {
+		return "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwHCXi3kVgLZG+tNuXR2l" +
+				"2rrZeYkpBKvHkOBRg7TUBGMnojZFMpdwuIB4QWTYBB57u6nGo19Ts5TCoy5dvPjH" +
+				"QXUF/tBxNO2ZUmp/wb2EsmHmqvRPG6Gfif61mLndqXS2fEydxmt0QKsme/SSvlYc" +
+				"DLXceUo+F4l1ukgKD1NhEQsDqWieT123IO4EhoKjgMIRuQI31lW0HR7aZ1jrOUhk" +
+				"N75ADpAoK/jOy0K5i9lWv5DpCN2so6se1B8FnQgFQ1rQPbJBRy1Fyp3HUVEWZ36q" +
+				"9a0tx7KzGqmDWPF2z/mYeMzwMxLdDkv4pjN4Zs+sbgjoQVaopyfM+AzklOPvHWbL" +
+				"mQIDAQAB";
+	}
+
+	private String jsonEscape(String value) {
+		StringBuilder escaped = new StringBuilder(value.length() + 16);
+		for (int i = 0; i < value.length(); i++) {
+			char current = value.charAt(i);
+			switch (current) {
+				case '\\':
+					escaped.append("\\\\");
+					break;
+				case '"':
+					escaped.append("\\\"");
+					break;
+				case '\b':
+					escaped.append("\\b");
+					break;
+				case '\f':
+					escaped.append("\\f");
+					break;
+				case '\n':
+					escaped.append("\\n");
+					break;
+				case '\r':
+					escaped.append("\\r");
+					break;
+				case '\t':
+					escaped.append("\\t");
+					break;
+				default:
+					if (current < 0x20) {
+						escaped.append(String.format("\\u%04x", (int) current));
+					} else {
+						escaped.append(current);
+					}
 			}
 		}
-		return binary.toString();
+		return escaped.toString();
 	}
 
-	//
-	// Console-Log
-	//
+	private void debugException(String message, Exception exception) {
+		if (debug) plugin.getRosaLogger().log(Level.WARNING, message, exception);
+	}
+
+	public enum LogType {NORMAL, LOW, NONE}
+
+	public enum ValidationType {WRONG_RESPONSE, PAGE_ERROR, URL_ERROR, KEY_OUTDATED, KEY_NOT_FOUND, NOT_VALID_IP, INVALID_PLUGIN, VALID}
+
 	private void log(int type, String message) {
-		if (logType == LogType.NONE || (logType == LogType.LOW && type == 0))
-			return;
-		plugin.getLogger().log(Level.INFO, message);
+		if (logType == LogType.NONE || (logType == LogType.LOW && type == 0)) return;
+		plugin.getRosaLogger().log(Level.INFO, message);
 	}
 }

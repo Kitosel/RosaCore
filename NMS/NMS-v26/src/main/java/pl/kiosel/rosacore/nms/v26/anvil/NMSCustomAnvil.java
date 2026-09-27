@@ -1,4 +1,4 @@
-package pl.kiosel.rosacore.nms.v26_1_R1.anvil;
+package pl.kiosel.rosacore.nms.v26.anvil;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;

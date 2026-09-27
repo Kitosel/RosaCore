@@ -1,4 +1,4 @@
-package pl.kiosel.rosacore.nms.v1_20_R2.anvil;
+package pl.kiosel.rosacore.nms.v1_20_R1.anvil;
 
 import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.nms.api.anvil.CustomAnvil;

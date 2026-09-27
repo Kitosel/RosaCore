@@ -59,3 +59,9 @@ verified and cached at runtime under `plugins/Rosa/libraries`.
 
 RosaCore is implemented from scratch. Other local libraries and plugins are used only to identify required capabilities and migration needs; their
 source code is not copied.
+
+## License
+
+Copyright (C) 2026 Kiosel.
+
+This project is licensed under the [GNU General Public License v3.0 only](LICENSE).

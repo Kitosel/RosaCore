@@ -1,9 +1,6 @@
-package pl.kiosel.rosacore.nms.v1_21_R7.tablist;
+package pl.kiosel.rosacore.nms.api.tablist;
 
 import org.bukkit.entity.Player;
-import pl.kiosel.rosacore.nms.api.tablist.ReflectiveTabListService;
-import pl.kiosel.rosacore.nms.api.tablist.TabList;
-import pl.kiosel.rosacore.nms.api.tablist.TabListService;
 
 public final class NMSTabListService implements TabListService {
 

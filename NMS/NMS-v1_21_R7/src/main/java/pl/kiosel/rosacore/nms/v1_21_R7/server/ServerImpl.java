@@ -1,7 +1,10 @@
-package pl.kiosel.rosacore.nms.v1_21_R1.server;
+package pl.kiosel.rosacore.nms.v1_21_R7.server;
 
+import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_21_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_21_R7.CraftServer;
+import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
+import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.nms.api.server.NmsServer;
 
 public class ServerImpl implements NmsServer {
@@ -14,6 +17,17 @@ public class ServerImpl implements NmsServer {
 	@Override
 	public double getTpsInLastMinute() {
 		return getRecentTps()[0];
+	}
+
+	@Override
+	public void instantRespawn(Player player) {
+		if (player.isOnline()) {
+			CraftPlayer craftPlayer = (CraftPlayer) player;
+			craftPlayer.getHandle().connection.send(new ClientboundGameEventPacket(
+					ClientboundGameEventPacket.IMMEDIATE_RESPAWN,
+					1.0f
+			));
+		}
 	}
 
 	@Override

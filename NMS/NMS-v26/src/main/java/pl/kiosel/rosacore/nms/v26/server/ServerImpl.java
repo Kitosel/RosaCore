@@ -1,4 +1,4 @@
-package pl.kiosel.rosacore.nms.v26_1_R1.server;
+package pl.kiosel.rosacore.nms.v26.server;
 
 import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import org.bukkit.Bukkit;
@@ -6,12 +6,14 @@ import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.nms.api.server.NmsServer;
+import pl.kiosel.rosacore.nms.api.server.ServerTps;
 
 public class ServerImpl implements NmsServer {
 
 	@Override
 	public double[] getRecentTps() {
-		return ((CraftServer) Bukkit.getServer()).getServer().recentTps;
+		CraftServer server = (CraftServer) Bukkit.getServer();
+		return ServerTps.read(server, server.getServer());
 	}
 
 	@Override

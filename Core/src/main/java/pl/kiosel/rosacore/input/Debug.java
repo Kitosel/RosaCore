@@ -1,8 +1,6 @@
-package pl.kiosel.core.input;
+package pl.kiosel.rosacore.input;
 
-import pl.kiosel.core.MetaPlugin;
-import pl.kiosel.core.chat.AdventureUtils;
-import pl.kiosel.core.locale.Message;
+import pl.kiosel.rosacore.RosaPlugin;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -14,93 +12,94 @@ import java.util.Calendar;
 
 public class Debug {
 
-    private final MetaPlugin plugin;
-    private FileWriter fw;
+	private final RosaPlugin plugin;
+	private FileWriter writer;
 
-    protected static String debug = AdventureUtils.h + Message.p;
+	public Debug(RosaPlugin plugin) {
+		this.plugin = plugin;
+	}
 
-    public Debug(MetaPlugin plugin) {
-        this.plugin = plugin;
-    }
+	public void setup() {
+		if (!plugin.isDev()) return;
 
-    public void setup() {
-		if(!plugin.isDev()) return;
+		File debugLogFile = new File(plugin.getDataFolder(), "debug.txt");
 
-        File debugLogFile = new File(plugin.getDataFolder(), "debug.txt");
-
-        try {
-            if (!debugLogFile.exists()) {
-                if (debugLogFile.createNewFile()) {
+		try {
+			if (!plugin.getDataFolder().isDirectory() && !plugin.getDataFolder().mkdirs()) {
+				throw new IOException("Could not create plugin data folder " + plugin.getDataFolder());
+			}
+			if (!debugLogFile.exists()) {
+				if (debugLogFile.createNewFile()) {
 					plugin.getLogger().info("Created file: " + debugLogFile);
 				}
-            }
-            new PrintWriter(debugLogFile).close();
+			}
+			new PrintWriter(debugLogFile).close();
 
-            fw = new FileWriter(debugLogFile, true);
-            debug("Setup debug complete");
-        } catch (IOException e) {
-            plugin.getLogger().info("Failed to instantiate FileWriter");
+			writer = new FileWriter(debugLogFile, true);
+			debug("Setup debug complete");
+		} catch (IOException e) {
+			plugin.getLogger().info("Failed to instantiate FileWriter");
 			plugin.getLogger().info(Arrays.toString(e.getStackTrace()));
-        }
-    }
+		}
+	}
 
-    public void close() {
-        if(fw == null) return;
-		if(!plugin.isDev()) return;
+	public synchronized void close() {
+		if (writer == null) return;
 
-        try {
-            debug("Closing debug");
-            fw.close();
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to close FileWriter");
+		try {
+			if (plugin.isDev()) debug("Closing debug");
+			writer.close();
+			writer = null;
+		} catch (IOException e) {
+			plugin.getLogger().severe("Failed to close FileWriter");
 			plugin.getLogger().info(Arrays.toString(e.getStackTrace()));
-        }
-    }
+		}
+	}
 
-    public void debug(String message) {
-        if(fw == null) return;
-		if(!plugin.isDev()) return;
+	public synchronized void debug(String message) {
+		if (writer == null) return;
+		if (!plugin.isDev()) return;
 
-        try {
-            plugin.getLogger().severe(message);
-            Calendar c = Calendar.getInstance();
-            String timestamp = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(c.getTime());
-            fw.write(String.format("[%s] %s\r\n", timestamp, message));
-            fw.flush();
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to print debug message.");
+		try {
+			plugin.getLogger().info(message);
+			Calendar c = Calendar.getInstance();
+			String timestamp = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(c.getTime());
+			writer.write(String.format("[%s] %s\r\n", timestamp, message));
+			writer.flush();
+		} catch (IOException e) {
+			plugin.getLogger().severe("Failed to print debug message.");
 			plugin.getLogger().info(Arrays.toString(e.getStackTrace()));
-        }
-    }
+		}
+	}
 
-    public void error(String message) {
-        if(fw == null) return;
-        if(!plugin.isDev()) return;
+	public synchronized void error(String message) {
+		if (writer == null) return;
+		if (!plugin.isDev()) return;
 
-        try {
-            plugin.getLogger().warning(message);
-            Calendar c = Calendar.getInstance();
-            String timestamp = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(c.getTime());
-            fw.write(String.format("[%s] %s\r\n", timestamp, "WARNING:" +message));
-            fw.flush();
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to print debug message.");
-            plugin.getLogger().info(Arrays.toString(e.getStackTrace()));
-        }
-    }
+		try {
+			plugin.getLogger().warning(message);
+			Calendar c = Calendar.getInstance();
+			String timestamp = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(c.getTime());
+			writer.write(String.format("[%s] %s\r\n", timestamp, "WARNING:" + message));
+			writer.flush();
+		} catch (IOException e) {
+			plugin.getLogger().severe("Failed to print debug message.");
+			plugin.getLogger().info(Arrays.toString(e.getStackTrace()));
+		}
+	}
 
-    public void debug(Throwable throwable) {
-        if(fw == null) return;
-        if(throwable == null) return;
-		if(!plugin.isDev()) return;
+	public synchronized void debug(Throwable throwable) {
+		if (writer == null) return;
+		if (throwable == null) return;
+		if (!plugin.isDev()) return;
 
-        PrintWriter pw = new PrintWriter(fw);
-        throwable.printStackTrace(pw);
-        pw.flush();
-    }
+		PrintWriter pw = new PrintWriter(writer);
+		throwable.printStackTrace(pw);
+		pw.flush();
+	}
 
-    public void debug(String message, Throwable throwable) {
-        debug(message);
-        debug(throwable);
-    }
+	public void debug(String message, Throwable throwable) {
+		debug(message);
+		debug(throwable);
+	}
 }

@@ -1,4 +1,4 @@
-package pl.kiosel.rosacore.nms.v26_1_R1.anvil;
+package pl.kiosel.rosacore.nms.v26.anvil;
 
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;

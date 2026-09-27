@@ -1,8 +1,6 @@
-package pl.kiosel.rosacore.utils;
+package pl.kiosel.rosacore.material;
 
-import de.tr7zw.changeme.nbtapi.NBT;
-import de.tr7zw.changeme.nbtapi.NBTItem;
-import de.tr7zw.changeme.nbtapi.iface.ReadWriteItemNBT;
+import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Banner;
 import org.bukkit.block.BlockState;
@@ -14,11 +12,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionType;
-import org.mariadb.jdbc.client.ServerVersion;
-import pl.kiosel.rosacore.compatibility.ZEnchantment;
-import pl.kiosel.rosacore.compatibility.ZItemFlag;
-import pl.kiosel.rosacore.compatibility.ZMaterial;
-import pl.kiosel.rosacore.compatibility.ZPotionEffectType;
+import pl.kiosel.rosacore.compatibility.*;
+import pl.kiosel.rosacore.utils.ColorUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -26,30 +21,9 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Consumer;
 
-/**
- * Cross-version {@link ItemStack} builder backed by XSeries.
- *
- * <p>The builder only uses direct Bukkit calls that are available on old
- * servers. Newer metadata methods are called reflectively, so merely loading
- * this class does not break older server versions.</p>
- *
- * <pre>{@code
- * ItemStack sword = ItemCreator.of(XMaterial.DIAMOND_SWORD)
- *         .name("<gradient:#55ff55:#00aaaa>Village sword</gradient>")
- *         .lore("&7A cross-version item", "&eRight click to use")
- *         .enchant(XEnchantment.SHARPNESS, 5)
- *         .unbreakable()
- *         .hideAttributes()
- *         .make();
- *
- * ItemStack potion = ItemCreator.potion(XMaterial.SPLASH_POTION)
- *         .potionEffect(XPotion.SPEED, 20 * 60, 1)
- *         .potionColor(Color.AQUA)
- *         .make();
- * }</pre>
- */
 public final class ItemCreator {
 
+	@Getter
 	private static String defaultLorePrefix = "&7";
 
 	private final ItemStack source;
@@ -99,7 +73,7 @@ public final class ItemCreator {
 	private String armorTrimPattern;
 	private boolean armorTrimTouched;
 
-	private ZPotionEffectType basePotion;
+	private ZPotionType basePotion;
 	private boolean extendedPotion;
 	private boolean upgradedPotion;
 	private final List<PotionEffect> potionEffects = new ArrayList<>();
@@ -176,10 +150,10 @@ public final class ItemCreator {
 	}
 
 	public static ItemCreator potion(ZPotionEffectType effect, int durationTicks, int amplifier) {
-		return potion(ZMaterial.POTION).potionEffect(effect., durationTicks, amplifier);
+		return potion(ZMaterial.POTION).potionEffect(effect, durationTicks, amplifier);
 	}
 
-	public static ItemCreator spawnEgg(XEntityType entityType) {
+	public static ItemCreator spawnEgg(ZEntityType entityType) {
 		Objects.requireNonNull(entityType, "entityType");
 		String materialName = entityType.name() + "_SPAWN_EGG";
 		ZMaterial egg = ZMaterial.match(materialName)
@@ -210,10 +184,6 @@ public final class ItemCreator {
 			throw new IllegalArgumentException("Expected a book material, got " + material);
 		}
 		return of(material);
-	}
-
-	public static String getDefaultLorePrefix() {
-		return defaultLorePrefix;
 	}
 
 	public static void setDefaultLorePrefix(String defaultLorePrefix) {
@@ -256,10 +226,6 @@ public final class ItemCreator {
 		return this;
 	}
 
-	public ItemCreator name(Component name) {
-		return name(AdventureUtils.toLegacy(Objects.requireNonNull(name, "name")));
-	}
-
 	public ItemCreator clearName() {
 		this.name = null;
 		this.clearName = true;
@@ -271,18 +237,12 @@ public final class ItemCreator {
 	}
 
 	public ItemCreator lore(Collection<String> lines) {
-		Objects.requireNonNull(lines, "lines");
+		if (lines == null || lines.isEmpty()) {
+			return this;
+		}
 		this.loreTouched = true;
 		for (String line : lines) {
 			addLoreLines(line);
-		}
-		return this;
-	}
-
-	public ItemCreator lore(Component... lines) {
-		Objects.requireNonNull(lines, "lines");
-		for (Component line : lines) {
-			lore(AdventureUtils.toLegacy(Objects.requireNonNull(line, "line")));
 		}
 		return this;
 	}
@@ -380,23 +340,19 @@ public final class ItemCreator {
 	}
 
 	public ItemCreator nbtBoolean(String key, boolean value) {
-		NBT.modify(this.source, (Consumer<ReadWriteItemNBT>) nbt -> nbt.setBoolean(key, value));
-		return this;
+		return tag(key, value);
 	}
 
 	public ItemCreator nbtString(String key, String value) {
-		NBT.modify(this.source, (Consumer<ReadWriteItemNBT>) nbt -> nbt.setString(key, value));
-		return this;
+		return tag(key, value);
 	}
 
 	public ItemCreator nbtInteger(String key, Integer value) {
-		NBT.modify(this.source, (Consumer<ReadWriteItemNBT>) nbt -> nbt.setInteger(key, value));
-		return this;
+		return tag(key, Objects.requireNonNull(value, "value"));
 	}
 
 	public ItemCreator nbtUUID(String key, UUID value) {
-		NBT.modify(this.source, (Consumer<ReadWriteItemNBT>) nbt -> nbt.setUUID(key, value));
-		return this;
+		return tag(key, value);
 	}
 
 	public ItemCreator glow(boolean glow) {
@@ -533,11 +489,11 @@ public final class ItemCreator {
 		return this;
 	}
 
-	public ItemCreator basePotion(XPotion potion) {
+	public ItemCreator basePotion(ZPotionType potion) {
 		return basePotion(potion, false, false);
 	}
 
-	public ItemCreator basePotion(XPotion potion, boolean extended, boolean upgraded) {
+	public ItemCreator basePotion(ZPotionType potion, boolean extended, boolean upgraded) {
 		if (extended && upgraded) {
 			throw new IllegalArgumentException("A potion cannot be both extended and upgraded");
 		}
@@ -547,18 +503,17 @@ public final class ItemCreator {
 		return this;
 	}
 
-	public ItemCreator potionEffect(XPotion potion, int durationTicks, int amplifier) {
-		Objects.requireNonNull(potion, "potion");
+	public ItemCreator potionEffect(ZPotionEffectType effectType, int durationTicks, int amplifier) {
+		Objects.requireNonNull(effectType, "effectType");
 		if (durationTicks < 1) {
 			throw new IllegalArgumentException("Potion duration must be positive");
 		}
 		if (amplifier < 0) {
 			throw new IllegalArgumentException("Potion amplifier cannot be negative");
 		}
-		PotionEffect effect = potion.buildPotionEffect(durationTicks, amplifier + 1);
-		if (effect == null) {
-			throw new IllegalArgumentException("Potion effect " + potion + " is unsupported on this server");
-		}
+		PotionEffect effect = effectType.create(durationTicks, amplifier)
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Potion effect " + effectType + " is unsupported on this server"));
 		return potionEffect(effect);
 	}
 
@@ -720,7 +675,7 @@ public final class ItemCreator {
 	}
 
 	public ItemCreator attribute(String attribute, String modifierName, double amount,
-	                             AttributeOperation operation, AttributeSlot slot) {
+								 AttributeOperation operation, AttributeSlot slot) {
 		this.attributes.add(new AttributeSpec(
 				Objects.requireNonNull(attribute, "attribute"),
 				Objects.requireNonNull(modifierName, "modifierName"),
@@ -757,6 +712,16 @@ public final class ItemCreator {
 		return this;
 	}
 
+	public ItemCreator tag(String key, long value) {
+		this.nbtOperations.add(new NbtOperation(key, NbtType.LONG, value));
+		return this;
+	}
+
+	public ItemCreator tag(String key, UUID value) {
+		this.nbtOperations.add(new NbtOperation(key, NbtType.UUID, Objects.requireNonNull(value, "value")));
+		return this;
+	}
+
 	public ItemCreator removeTag(String key) {
 		this.nbtOperations.add(new NbtOperation(key, NbtType.REMOVE, null));
 		return this;
@@ -773,11 +738,6 @@ public final class ItemCreator {
 		return this;
 	}
 
-	/**
-	 * Calls a metadata method only when it exists on the running server.
-	 * This is useful for new Bukkit/Paper item components without dropping
-	 * compatibility with older versions.
-	 */
 	public ItemCreator invokeMeta(String method, Object... arguments) {
 		this.reflectiveMetaCalls.add(new ReflectiveCall(
 				Objects.requireNonNull(method, "method"), arguments == null ? new Object[0] : arguments.clone()));
@@ -838,7 +798,11 @@ public final class ItemCreator {
 	}
 
 	public void give(Player player) {
-		XItemStack.giveOrDrop(Objects.requireNonNull(player, "player"), make());
+		Objects.requireNonNull(player, "player");
+		Map<Integer, ItemStack> leftovers = player.getInventory().addItem(make());
+		for (ItemStack leftover : leftovers.values()) {
+			player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+		}
 	}
 
 	public void drop(Location location) {
@@ -850,11 +814,11 @@ public final class ItemCreator {
 	}
 
 	public Map<String, Object> serialize() {
-		return XItemStack.serialize(make());
+		return make().serialize();
 	}
 
 	public static ItemCreator deserialize(Map<String, Object> serialized) {
-		ItemStack item = XItemStack.deserialize(Objects.requireNonNull(serialized, "serialized"));
+		ItemStack item = ItemStack.deserialize(Objects.requireNonNull(serialized, "serialized"));
 		if (item == null) {
 			throw new IllegalArgumentException("Could not deserialize item");
 		}
@@ -899,9 +863,9 @@ public final class ItemCreator {
 		}
 
 		if (glow && enchantments.isEmpty() && xEnchantments.isEmpty()) {
-			Enchantment unbreakingEnchant = ZEnchantment.UNBREAKING.getEnchantment();
-			if (unbreakingEnchant != null) {
-				addEnchant(meta, unbreakingEnchant, 1);
+			Optional<Enchantment> unbreakingEnchant = ZEnchantment.UNBREAKING.getEnchantment();
+			if (unbreakingEnchant.isPresent()) {
+				addEnchant(meta, unbreakingEnchant.get(), 1);
 				flags.add(ZItemFlag.HIDE_ENCHANTS);
 			}
 		}
@@ -1142,12 +1106,15 @@ public final class ItemCreator {
 	}
 
 	private void applyBasePotion(PotionMeta meta) {
-		PotionType type = basePotion.getPotionType();
-		if (type == null) {
+		Optional<PotionType> resolved = basePotion.getPotionType();
+		if (!resolved.isPresent()) {
 			return;
 		}
+		PotionType type = resolved.get();
 
-		PotionType modernType = getModernPotionType(type);
+		boolean effectiveExtended = extendedPotion || basePotion.isLong();
+		boolean effectiveUpgraded = upgradedPotion || basePotion.isStrong();
+		PotionType modernType = getModernPotionType(type, effectiveExtended, effectiveUpgraded);
 		if (invokeCompatible(meta, "setBasePotionType", modernType)) {
 			return;
 		}
@@ -1155,20 +1122,15 @@ public final class ItemCreator {
 		try {
 			Class<?> potionDataClass = Class.forName("org.bukkit.potion.PotionData");
 			Constructor<?> constructor = potionDataClass.getConstructor(PotionType.class, boolean.class, boolean.class);
-			Object potionData = constructor.newInstance(type, extendedPotion, upgradedPotion);
+			Object potionData = constructor.newInstance(type, effectiveExtended, effectiveUpgraded);
 			invokeCompatible(meta, "setBasePotionData", potionData);
 		} catch (ReflectiveOperationException | LinkageError ignored) {
-			PotionEffect fallback = basePotion.buildPotionEffect(20 * 180, upgradedPotion ? 2 : 1);
-			if (fallback != null) {
-				meta.addCustomEffect(fallback, true);
-			}
+			basePotion.createEffect(20 * 180, effectiveUpgraded ? 1 : 0)
+					.ifPresent(effect -> meta.addCustomEffect(effect, true));
 		}
 	}
 
 	private void applyArmorTrim(ItemMeta meta) {
-		if (!ServerVersion.isServerVersionAtLeast(ServerVersion.V1_20)) {
-			return;
-		}
 		if (armorTrimMaterial == null || armorTrimPattern == null) {
 			invokeCompatible(meta, "setTrim", (Object) null);
 			return;
@@ -1182,7 +1144,6 @@ public final class ItemCreator {
 			Constructor<?> constructor = trimClass.getConstructor(materialClass, patternClass);
 			invokeCompatible(meta, "setTrim", constructor.newInstance(material, pattern));
 		} catch (ReflectiveOperationException | IllegalArgumentException | LinkageError ignored) {
-			// Armor trims are unavailable on this version or the supplied key is unknown.
 		}
 	}
 
@@ -1198,41 +1159,45 @@ public final class ItemCreator {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private ItemStack applyNbt(ItemStack item) {
 		if (nbtOperations.isEmpty() && unbreakable == null) {
 			return item;
 		}
-		NBTItem nbt = new NBTItem(item);
 		if (unbreakable != null && !hasBooleanMetaMethod(item, "isUnbreakable")) {
 			if (unbreakable) {
-				nbt.setBoolean("Unbreakable", true);
+				ItemTag.set(item, "Unbreakable", true);
 			} else {
-				nbt.removeKey("Unbreakable");
+				ItemTag.remove(item, "Unbreakable");
 			}
 		}
 		for (NbtOperation operation : nbtOperations) {
 			switch (operation.type) {
 				case STRING:
-					nbt.setString(operation.key, (String) operation.value);
+					ItemTag.set(item, operation.key, (String) operation.value);
 					break;
 				case INTEGER:
-					nbt.setInteger(operation.key, (Integer) operation.value);
+					ItemTag.set(item, operation.key, (Integer) operation.value);
+					break;
+				case LONG:
+					ItemTag.set(item, operation.key, (Long) operation.value);
 					break;
 				case DOUBLE:
-					nbt.setDouble(operation.key, (Double) operation.value);
+					ItemTag.set(item, operation.key, (Double) operation.value);
 					break;
 				case BOOLEAN:
-					nbt.setBoolean(operation.key, (Boolean) operation.value);
+					ItemTag.set(item, operation.key, (Boolean) operation.value);
+					break;
+				case UUID:
+					ItemTag.set(item, operation.key, (UUID) operation.value);
 					break;
 				case REMOVE:
-					nbt.removeKey(operation.key);
+					ItemTag.remove(item, operation.key);
 					break;
 				default:
 					throw new IllegalStateException("Unhandled NBT type " + operation.type);
 			}
 		}
-		return nbt.getItem();
+		return item;
 	}
 
 	private ItemStack createTexturedHead() {
@@ -1256,11 +1221,14 @@ public final class ItemCreator {
 		}
 	}
 
-	private PotionType getModernPotionType(PotionType baseType) {
-		if (!extendedPotion && !upgradedPotion) {
+	private PotionType getModernPotionType(PotionType baseType, boolean extended, boolean upgraded) {
+		if (baseType.name().startsWith("LONG_") || baseType.name().startsWith("STRONG_")) {
 			return baseType;
 		}
-		String prefix = extendedPotion ? "LONG_" : "STRONG_";
+		if (!extended && !upgraded) {
+			return baseType;
+		}
+		String prefix = extended ? "LONG_" : "STRONG_";
 		try {
 			return PotionType.valueOf(prefix + baseType.name());
 		} catch (IllegalArgumentException ignored) {
@@ -1276,7 +1244,7 @@ public final class ItemCreator {
 	}
 
 	private static String format(String text) {
-		return AdventureUtils.formatLegacy(text == null ? "" : text);
+		return ColorUtils.color(text == null ? "" : text);
 	}
 
 	private static boolean hasBooleanMetaMethod(ItemStack item, String methodName) {
@@ -1309,8 +1277,7 @@ public final class ItemCreator {
 				method.invoke(target, args);
 				return true;
 			} catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException |
-			         LinkageError ignored) {
-				// Try another compatible overload if present.
+					 LinkageError ignored) {
 			}
 		}
 		return false;
@@ -1419,8 +1386,10 @@ public final class ItemCreator {
 	private enum NbtType {
 		STRING,
 		INTEGER,
+		LONG,
 		DOUBLE,
 		BOOLEAN,
+		UUID,
 		REMOVE
 	}
 
@@ -1454,7 +1423,7 @@ public final class ItemCreator {
 		private final AttributeSlot slot;
 
 		private AttributeSpec(String attribute, String modifierName, double amount,
-		                      AttributeOperation operation, AttributeSlot slot) {
+							  AttributeOperation operation, AttributeSlot slot) {
 			this.attribute = attribute;
 			this.modifierName = modifierName;
 			this.amount = amount;
@@ -1479,30 +1448,74 @@ public final class ItemCreator {
 		}
 	}
 
-	/**
-	 * Kept in a nested class so old servers never resolve Bukkit attribute
-	 * classes unless attributes are actually requested.
-	 */
 	private static final class AttributeSupport {
 		private static void apply(ItemMeta meta, List<AttributeSpec> specs) {
 			for (AttributeSpec spec : specs) {
 				try {
-					Optional<com.cryptomorin.xseries.XAttribute> matched =
-							com.cryptomorin.xseries.XAttribute.of(spec.attribute);
-					if (!matched.isPresent() || !matched.get().isSupported()) {
+					Class<?> attributeClass = Class.forName("org.bukkit.attribute.Attribute");
+					Object attribute = enumValue(attributeClass, spec.attribute);
+					if (attribute == null) {
 						continue;
 					}
-					org.bukkit.attribute.AttributeModifier.Operation operation =
-							org.bukkit.attribute.AttributeModifier.Operation.valueOf(spec.operation.name());
-					org.bukkit.inventory.EquipmentSlot slot =
-							org.bukkit.inventory.EquipmentSlot.valueOf(spec.slot.name());
-					org.bukkit.attribute.AttributeModifier modifier =
-							com.cryptomorin.xseries.XAttribute.createModifier(
-									spec.modifierName, spec.amount, operation, slot);
-					meta.addAttributeModifier(matched.get().get(), modifier);
-				} catch (IllegalArgumentException | LinkageError ignored) {
-					// Attribute, operation or slot is unavailable on this version.
+					Class<?> modifierClass = Class.forName("org.bukkit.attribute.AttributeModifier");
+					Class<?> operationClass = Class.forName("org.bukkit.attribute.AttributeModifier$Operation");
+					Object operation = enumValue(operationClass, spec.operation.name());
+					Object modifier = createModifier(modifierClass, operationClass, operation, spec);
+					if (modifier != null) {
+						Method add = meta.getClass().getMethod("addAttributeModifier", attributeClass, modifierClass);
+						add.invoke(meta, attribute, modifier);
+					}
+				} catch (ReflectiveOperationException | IllegalArgumentException | LinkageError ignored) {
 				}
+			}
+		}
+
+		@SuppressWarnings({"rawtypes", "unchecked"})
+		private static Object enumValue(Class<?> enumClass, String value) {
+			Class<? extends Enum> type = enumClass.asSubclass(Enum.class);
+			String name = enumName(value);
+			String[] candidates = name.startsWith("GENERIC_")
+					? new String[]{name, name.substring(8)}
+					: new String[]{name, "GENERIC_" + name};
+			for (String candidate : candidates) {
+				try {
+					return Enum.valueOf(type, candidate);
+				} catch (IllegalArgumentException ignored) {
+				}
+			}
+			return null;
+		}
+
+		private static Object createModifier(Class<?> modifierClass, Class<?> operationClass,
+											 Object operation, AttributeSpec spec)
+				throws ReflectiveOperationException {
+			if (operation == null) {
+				return null;
+			}
+			Class<?> slotClass = Class.forName("org.bukkit.inventory.EquipmentSlot");
+			Object slot = enumValue(slotClass, spec.slot.name());
+			try {
+				Constructor<?> constructor = modifierClass.getConstructor(
+						String.class, double.class, operationClass, slotClass);
+				return constructor.newInstance(spec.modifierName, spec.amount, operation, slot);
+			} catch (NoSuchMethodException ignored) {
+			}
+			try {
+				Constructor<?> constructor = modifierClass.getConstructor(
+						UUID.class, String.class, double.class, operationClass, slotClass);
+				return constructor.newInstance(UUID.randomUUID(), spec.modifierName,
+						spec.amount, operation, slot);
+			} catch (NoSuchMethodException ignored) {
+			}
+			try {
+				Constructor<?> constructor = modifierClass.getConstructor(
+						String.class, double.class, operationClass);
+				return constructor.newInstance(spec.modifierName, spec.amount, operation);
+			} catch (NoSuchMethodException ignored) {
+				Constructor<?> constructor = modifierClass.getConstructor(
+						UUID.class, String.class, double.class, operationClass);
+				return constructor.newInstance(UUID.randomUUID(), spec.modifierName,
+						spec.amount, operation);
 			}
 		}
 	}

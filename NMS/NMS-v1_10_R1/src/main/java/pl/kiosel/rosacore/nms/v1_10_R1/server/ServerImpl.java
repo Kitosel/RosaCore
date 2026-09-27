@@ -1,9 +1,9 @@
-package pl.kiosel.rosacore.nms.v1_8_R3.server;
+package pl.kiosel.rosacore.nms.v1_10_R1.server;
 
 import com.google.common.base.Preconditions;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_10_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_10_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.nms.api.server.NmsServer;
 
@@ -22,6 +22,11 @@ public class ServerImpl implements NmsServer {
 	@Override
 	public int getReloadCount() {
 		return ((CraftServer) Bukkit.getServer()).reloadCount;
+	}
+
+	@Override
+	public void instantRespawn(Player player) {
+
 	}
 
 	@Override

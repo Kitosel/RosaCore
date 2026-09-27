@@ -1,23 +1,28 @@
-package pl.kiosel.rosacore.nms.v1_20_R2;
+package pl.kiosel.rosacore.nms.v1_20_R1;
 
 import pl.kiosel.rosacore.nms.api.NMS;
 import pl.kiosel.rosacore.nms.api.anvil.CustomAnvilFactory;
-import pl.kiosel.rosacore.nms.api.tablist.TabListService;
-import pl.kiosel.rosacore.nms.v1_20_R2.anvil.NMSCustomAnvilFactory;
-import pl.kiosel.rosacore.nms.v1_20_R2.tablist.NMSTabListService;
+import pl.kiosel.rosacore.nms.api.server.NmsServer;
+import pl.kiosel.rosacore.nms.v1_20_R1.anvil.NMSCustomAnvilFactory;
+import pl.kiosel.rosacore.nms.v1_20_R1.server.ServerImpl;
 
 public final class NmsImpl implements NMS {
 
-	private final CustomAnvilFactory customAnvilFactory = new NMSCustomAnvilFactory();
-	private final TabListService tabListService = new NMSTabListService();
+	private final CustomAnvilFactory customAnvilFactory;
+	private final NmsServer nmsServer;
 
-	@Override
-	public CustomAnvilFactory getCustomAnvilFactory() {
-		return customAnvilFactory;
+	public NmsImpl() {
+		this.customAnvilFactory = new NMSCustomAnvilFactory();
+		this.nmsServer = new ServerImpl();
 	}
 
 	@Override
-	public TabListService getTabListService() {
-		return tabListService;
+	public CustomAnvilFactory getCustomAnvilFactory() {
+		return this.customAnvilFactory;
+	}
+
+	@Override
+	public NmsServer getNmsServer() {
+		return this.nmsServer;
 	}
 }

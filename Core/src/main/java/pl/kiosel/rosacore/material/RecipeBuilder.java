@@ -1,4 +1,4 @@
-package pl.kiosel.rosacore.loot;
+package pl.kiosel.rosacore.material;
 
 import lombok.Getter;
 import org.bukkit.Material;
@@ -9,18 +9,13 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.material.MaterialData;
 import pl.kiosel.rosacore.RosaPlugin;
+import pl.kiosel.rosacore.compatibility.ResolvedMaterial;
 import pl.kiosel.rosacore.compatibility.ZMaterial;
-import pl.kiosel.rosacore.material.ResolvedMaterial;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 
-/**
- * Builder for shaped and shapeless Bukkit recipes from 1.8.8 through 26.2.
- * Modern servers receive a namespaced recipe and exact item choices. On old
- * servers an exact choice gracefully falls back to material plus legacy data.
- */
 public final class RecipeBuilder {
 
 	private final RosaPlugin plugin;
@@ -93,9 +88,6 @@ public final class RecipeBuilder {
 		return setResult(Objects.requireNonNull(material, "material").requireItem());
 	}
 
-	/**
-	 * Builds and registers the recipe on the running server.
-	 */
 	public Recipe build() {
 		validate();
 		Recipe recipe = shapeless ? createShapeless() : createShaped();
@@ -106,9 +98,6 @@ public final class RecipeBuilder {
 		return recipe;
 	}
 
-	/**
-	 * Alias that makes the side effect of {@link #build()} explicit.
-	 */
 	public Recipe register() {
 		return build();
 	}
@@ -125,7 +114,6 @@ public final class RecipeBuilder {
 					return true;
 				}
 			} catch (ReflectiveOperationException | LinkageError ignored) {
-				// 1.8-1.12: remove the registered instance through the iterator.
 			}
 		}
 
@@ -143,9 +131,6 @@ public final class RecipeBuilder {
 		return false;
 	}
 
-	/**
-	 * Returns Bukkit's NamespacedKey on modern servers, otherwise null.
-	 */
 	public Object getKey() {
 		if (namespacedKey == null) {
 			namespacedKey = createNamespacedKey();
@@ -300,13 +285,13 @@ public final class RecipeBuilder {
 		}
 	}
 
-	private static String normalizeKey(String name) {
+	private String normalizeKey(String name) {
 		Objects.requireNonNull(name, "name");
 		String key = name.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
 		if (key.isEmpty() || !key.matches("[a-z0-9._/-]+")) {
 			throw new IllegalArgumentException("Invalid recipe key: " + name);
 		}
-		return key;
+		return this.plugin.getDescription().getName() + "_" + key;
 	}
 
 	private static final class Ingredient {

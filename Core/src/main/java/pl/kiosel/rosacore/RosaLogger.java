@@ -1,36 +1,45 @@
-package pl.kiosel.core;
+package pl.kiosel.rosacore;
 
-import org.bukkit.plugin.Plugin;
-
+import java.util.Objects;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-public final class CoreLogger extends Logger {
-    private static final CoreLogger INSTANCE = new CoreLogger();
+public final class RosaLogger {
 
-    private final String corePrefix = "[" + MetaCoreConstants.getProjectName() + "] ";
-    private String pluginPrefix = "";
+	private static final RosaLogger INSTANCE = new RosaLogger();
+	private Logger delegate = Logger.getLogger(RosaPlugin.getCoreName());
+	private final String prefix;
 
-    private CoreLogger() {
-        super(CoreLogger.class.getCanonicalName(), null);
-        setLevel(Level.ALL);
+	RosaLogger() {
+		this.prefix = "[" + RosaPlugin.getCoreName() + "] ";
+	}
 
-        LogManager.getLogManager().addLogger(this);
-    }
+	void setPlugin(RosaPlugin plugin) {
+		Objects.requireNonNull(plugin, "plugin");
+		this.delegate = plugin.getLogger();
+	}
 
-    void setPlugin(Plugin plugin) {
-        this.pluginPrefix = "[" + plugin.getName() + "] ";
-    }
+	public void info(String message) {
+		log(Level.INFO, message);
+	}
 
-    @Override
-    public void log(LogRecord record) {
-        record.setMessage(this.pluginPrefix + this.corePrefix + record.getMessage());
-        super.log(record);
-    }
+	public void warning(String message) {
+		log(Level.WARNING, message);
+	}
 
-    public static CoreLogger getInstance() {
-        return INSTANCE;
-    }
+	public void severe(String message) {
+		log(Level.SEVERE, message);
+	}
+
+	public void log(Level level, String message) {
+		this.delegate.log(Objects.requireNonNull(level, "level"), this.prefix + message);
+	}
+
+	public void log(Level level, String message, Throwable throwable) {
+		this.delegate.log(level, this.prefix + message, throwable);
+	}
+
+	public static RosaLogger getInstance() {
+		return INSTANCE;
+	}
 }

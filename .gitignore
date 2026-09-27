@@ -54,6 +54,9 @@ Icon
 # Thumbnails
 ._*
 
+# License
+Core/src/main/java/pl/kiosel/rosacore/input/Licenses.java
+
 # Files that might appear in the root of a volume
 .DocumentRevisions-V100
 .fseventsd
@@ -104,6 +107,7 @@ pom.xml.next
 
 release.properties
 dependency-reduced-pom.xml
+dependency-reduced-pom-*.xml
 buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
@@ -111,3 +115,4 @@ buildNumber.properties
 
 # Common working directory
 run/
+/Core/src/test/java/

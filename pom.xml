@@ -1,53 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>pl.kiosel</groupId>
-    <artifactId>RosaCore</artifactId>
-    <version>0.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <groupId>pl.kiosel.rosacore</groupId>
+    <artifactId>rosacore-parent</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
 
     <name>RosaCore</name>
+    <description>Minecraft plugins library</description>
 
     <properties>
-        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>1.8</java.version>
+        <java.release>8</java.release>
+
+        <junit.version>5.10.5</junit.version>
+        <spigot-api.version>1.8.8-R0.1-SNAPSHOT</spigot-api.version>
+
+        <revision>0.2.4</revision>
     </properties>
 
+    <modules>
+        <module>Compat</module>
+        <module>Core</module>
+
+        <!--NMS-->
+        <module>NMS/NMS-API</module>
+        <module>NMS/NMS-v1_8_R1</module>
+        <module>NMS/NMS-v1_8_R2</module>
+        <module>NMS/NMS-v1_8_R3</module>
+        <module>NMS/NMS-v1_9_R1</module>
+        <module>NMS/NMS-v1_9_R2</module>
+        <module>NMS/NMS-v1_10_R1</module>
+        <module>NMS/NMS-v1_11_R1</module>
+        <module>NMS/NMS-v1_12_R1</module>
+        <module>NMS/NMS-v1_13_R1</module>
+        <module>NMS/NMS-v1_13_R2</module>
+        <module>NMS/NMS-v1_14_R1</module>
+        <module>NMS/NMS-v1_15_R1</module>
+        <module>NMS/NMS-v1_16_R1</module>
+        <module>NMS/NMS-v1_16_R2</module>
+        <module>NMS/NMS-v1_16_R3</module>
+        <module>NMS/NMS-v1_17_R1</module>
+        <module>NMS/NMS-v1_18_R1</module>
+        <module>NMS/NMS-v1_18_R2</module>
+        <module>NMS/NMS-v1_19_R1</module>
+        <module>NMS/NMS-v1_19_R2</module>
+        <module>NMS/NMS-v1_19_R3</module>
+        <module>NMS/NMS-v1_20_R1</module>
+        <module>NMS/NMS-v1_20_R2</module>
+        <module>NMS/NMS-v1_20_R3</module>
+        <module>NMS/NMS-v1_20_R4</module>
+        <module>NMS/NMS-v1_21_R1</module>
+        <module>NMS/NMS-v1_21_R2</module>
+        <module>NMS/NMS-v1_21_R3</module>
+        <module>NMS/NMS-v1_21_R4</module>
+        <module>NMS/NMS-v1_21_R5</module>
+        <module>NMS/NMS-v1_21_R6</module>
+        <module>NMS/NMS-v1_21_R7</module>
+        <module>NMS/NMS-v26</module>
+        <!--<module>NMS/NMS-v26_1_R1</module>-->
+        <!--<module>NMS/NMS-v26_2_R1</module>-->
+        <!--<module>NMS/NMS-v26_3_R1</module>-->
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
-        <defaultGoal>clean package</defaultGoal>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.15.0</version>
+                    <configuration>
+                        <release>${java.release}</release>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.4.2</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <Implementation-Title>${project.artifactId}</Implementation-Title>
+                                <Implementation-Version>${project.version}</Implementation-Version>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.3</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
             </plugin>
         </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
     </build>
 
     <repositories>
@@ -55,14 +134,30 @@
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
-    </repositories>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.18.2-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
+        <repository>
+            <id>papermc-repo</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io/</url>
+        </repository>
+
+        <repository>
+            <id>enginehub-repo</id>
+            <url>https://maven.enginehub.org/repo/</url>
+        </repository>
+
+        <repository>
+            <id>codemc-repo</id>
+            <url>https://repo.codemc.io/repository/maven-public/</url>
+        </repository>
+
+        <repository>
+            <id>viaversion-repo</id>
+            <url>https://repo.viaversion.com</url>
+        </repository>
+    </repositories>
 </project>

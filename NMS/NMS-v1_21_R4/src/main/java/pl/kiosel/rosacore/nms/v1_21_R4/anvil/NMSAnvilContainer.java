@@ -1,28 +1,28 @@
-package pl.kiosel.rosacore.nms.v1_21_R3.anvil;
+package pl.kiosel.rosacore.nms.v1_21_R4.anvil;
 
-import net.minecraft.world.entity.player.EntityHuman;
-import net.minecraft.world.entity.player.PlayerInventory;
-import net.minecraft.world.inventory.ContainerAccess;
-import net.minecraft.world.inventory.ContainerAnvil;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AnvilMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 
-final class NMSAnvilContainer extends ContainerAnvil {
+final class NMSAnvilContainer extends AnvilMenu {
 
 	private final NMSCustomAnvil anvil;
 
-	NMSAnvilContainer(int windowId, PlayerInventory inventory, ContainerAccess access, NMSCustomAnvil anvil) {
+	NMSAnvilContainer(int windowId, Inventory inventory, ContainerLevelAccess access, NMSCustomAnvil anvil) {
 		super(windowId, inventory, access);
 		this.anvil = anvil;
 		this.checkReachable = false;
 	}
 
 	@Override
-	public boolean b(EntityHuman player) {
+	protected boolean mayPickup(Player entityhuman, boolean flag) {
 		return true;
 	}
 
 	@Override
-	public boolean a(String text) {
-		boolean accepted = super.a(text);
+	public boolean setItemName(String text) {
+		boolean accepted = super.setItemName(text);
 		anvil.receiveText(text);
 		return accepted;
 	}

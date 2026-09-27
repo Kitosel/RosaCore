@@ -5,42 +5,41 @@ import org.bukkit.plugin.Plugin;
 import pl.kiosel.rosacore.RosaPlugin;
 import pl.kiosel.rosacore.hook.internal.HookReflection;
 
-/**
- * Economy provider backed by the service registered through Vault.
- */
-public final class VaultEconomyHook extends EconomyHook {
+import java.math.BigDecimal;
+import java.util.UUID;
 
-	private Object provider;
+public final class EssentialsXEconomyHook extends EconomyHook {
+
 	private Class<?> economyType;
 
 	@Override
 	public String getName() {
-		return "Vault";
+		return "Essentials";
 	}
 
 	@Override
 	public String[] getPluginDependencies() {
-		return new String[]{"Vault"};
+		return new String[]{"Essentials"};
 	}
 
 	@Override
 	protected boolean onEnable(RosaPlugin plugin) throws Exception {
-		Plugin vault = getDependencyPlugin("Vault");
-		this.economyType = HookReflection.findClass(vault, "net.milkbowl.vault.economy.Economy");
-		return refreshProvider();
+		Plugin essentials = getDependencyPlugin("Essentials");
+		this.economyType = HookReflection.findClass(essentials, "com.earth2me.essentials.api.Economy");
+		return true;
 	}
 
 	@Override
 	protected void onDisable() {
-		this.provider = null;
 		this.economyType = null;
 	}
 
 	@Override
 	public double getBalance(OfflinePlayer player) {
-		validatePlayer(player);
+		UUID playerId = validatePlayer(player).getUniqueId();
 		try {
-			Object value = HookReflection.invoke(requireProvider(), "getBalance", player);
+			Object value = HookReflection.invokeStaticExact(
+					requireEconomyType(), "getMoneyExact", new Class<?>[]{UUID.class}, playerId);
 			return ((Number) value).doubleValue();
 		} catch (ReflectiveOperationException exception) {
 			throw economyFailure("read a balance", exception);
@@ -49,10 +48,12 @@ public final class VaultEconomyHook extends EconomyHook {
 
 	@Override
 	public boolean hasBalance(OfflinePlayer player, double amount) {
-		validatePlayer(player);
-		validateAmount(amount);
+		UUID playerId = validatePlayer(player).getUniqueId();
+		BigDecimal exactAmount = BigDecimal.valueOf(validateAmount(amount));
 		try {
-			return Boolean.TRUE.equals(HookReflection.invoke(requireProvider(), "has", player, amount));
+			return Boolean.TRUE.equals(HookReflection.invokeStaticExact(
+					requireEconomyType(), "hasEnough",
+					new Class<?>[]{UUID.class, BigDecimal.class}, playerId, exactAmount));
 		} catch (ReflectiveOperationException exception) {
 			throw economyFailure("check a balance", exception);
 		}
@@ -60,33 +61,29 @@ public final class VaultEconomyHook extends EconomyHook {
 
 	@Override
 	public boolean withdraw(OfflinePlayer player, double amount) {
-		return transaction("withdrawPlayer", validatePlayer(player), validateAmount(amount));
+		return transaction("subtract", validatePlayer(player), validateAmount(amount));
 	}
 
 	@Override
 	public boolean deposit(OfflinePlayer player, double amount) {
-		return transaction("depositPlayer", validatePlayer(player), validateAmount(amount));
+		return transaction("add", validatePlayer(player), validateAmount(amount));
 	}
 
 	private boolean transaction(String method, OfflinePlayer player, double amount) {
+		UUID playerId = player.getUniqueId();
+		BigDecimal exactAmount = BigDecimal.valueOf(amount);
 		try {
-			Object response = HookReflection.invoke(requireProvider(), method, player, amount);
-			return response != null && Boolean.TRUE.equals(HookReflection.invoke(response, "transactionSuccess"));
+			HookReflection.invokeStaticExact(
+					requireEconomyType(), method,
+					new Class<?>[]{UUID.class, BigDecimal.class}, playerId, exactAmount);
+			return true;
 		} catch (ReflectiveOperationException exception) {
-			throw economyFailure(method.equals("depositPlayer") ? "deposit money" : "withdraw money", exception);
+			throw economyFailure(method.equals("add") ? "deposit money" : "withdraw money", exception);
 		}
 	}
 
-	private Object requireProvider() throws ReflectiveOperationException {
-		if (!refreshProvider()) throw new IllegalStateException("Vault has no registered economy provider");
-		return this.provider;
-	}
-
-	@SuppressWarnings({"rawtypes", "unchecked"})
-	private boolean refreshProvider() throws ReflectiveOperationException {
-		if (this.economyType == null) return false;
-		Object registration = getPlugin().getServer().getServicesManager().getRegistration((Class) this.economyType);
-		this.provider = registration == null ? null : HookReflection.invoke(registration, "getProvider");
-		return this.provider != null;
+	private Class<?> requireEconomyType() {
+		if (this.economyType == null) throw new IllegalStateException("EssentialsX economy API is unavailable");
+		return this.economyType;
 	}
 }

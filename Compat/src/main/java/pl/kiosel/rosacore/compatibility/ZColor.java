@@ -1,13 +1,12 @@
 package pl.kiosel.rosacore.compatibility;
 
-import lombok.Getter;
 import org.bukkit.ChatColor;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@Getter
 public enum ZColor {
+
 	BLACK('0', ChatColor.BLACK, true),
 	DARK_BLUE('1', ChatColor.DARK_BLUE, true),
 	DARK_GREEN('2', ChatColor.DARK_GREEN, true),
@@ -47,6 +46,18 @@ public enum ZColor {
 		for (ZColor color : values()) {
 			BY_CHAR.put(color.code, color);
 		}
+	}
+
+	public ChatColor getChatColor() {
+		return chatColor;
+	}
+
+	public boolean isColor() {
+		return isColor;
+	}
+
+	public char getCode() {
+		return code;
 	}
 
 	public static ZColor getByChar(char code) {
