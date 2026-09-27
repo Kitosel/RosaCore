@@ -1,0 +1,14 @@
+package pl.kiosel.rosacore.nms.api.packet;
+
+public enum TabPacketAction {
+	ADD_PLAYER,
+	INITIALIZE_CHAT,
+	UPDATE_GAME_MODE,
+	UPDATE_LISTED,
+	UPDATE_LATENCY,
+	UPDATE_DISPLAY_NAME,
+	UPDATE_HAT,
+	UPDATE_LIST_ORDER,
+	REMOVE_PLAYER,
+	UNKNOWN
+}
