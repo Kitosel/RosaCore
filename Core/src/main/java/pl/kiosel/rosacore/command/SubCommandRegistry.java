@@ -46,7 +46,7 @@ final class SubCommandRegistry {
 
 	RosaSubCommand find(String input) {
 		if (input == null) return null;
-		return commands.get(input.trim().toLowerCase(java.util.Locale.ROOT));
+		return commands.get(input.trim().toLowerCase(Locale.ROOT));
 	}
 
 	boolean isEmpty() {

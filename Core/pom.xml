@@ -7,7 +7,7 @@
     <parent>
         <groupId>pl.kiosel.rosacore</groupId>
         <artifactId>rosacore-parent</artifactId>
-        <version>${revision}</version>
+        <version>0.2.5</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -162,6 +162,14 @@
             <artifactId>modrinth-update-checker</artifactId>
             <version>1.0.0-JAVA8</version>
             <scope>compile</scope>
+        </dependency>
+
+        <!--HOOKS/API-->
+        <dependency>
+            <groupId>com.github.MilkBowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.7.1</version>
+            <scope>provided</scope>
         </dependency>
 
         <!--LOGGER-->

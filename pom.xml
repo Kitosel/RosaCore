@@ -6,7 +6,7 @@
 
     <groupId>pl.kiosel.rosacore</groupId>
     <artifactId>rosacore-parent</artifactId>
-    <version>${revision}</version>
+    <version>0.2.5</version>
     <packaging>pom</packaging>
 
     <name>RosaCore</name>
@@ -19,8 +19,6 @@
 
         <junit.version>5.10.5</junit.version>
         <spigot-api.version>1.8.8-R0.1-SNAPSHOT</spigot-api.version>
-
-        <revision>0.2.4</revision>
     </properties>
 
     <modules>

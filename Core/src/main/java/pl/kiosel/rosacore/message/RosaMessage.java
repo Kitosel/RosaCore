@@ -3,10 +3,7 @@ package pl.kiosel.rosacore.message;
 import lombok.Getter;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,7 +47,8 @@ public final class RosaMessage {
 	public RosaMessage with(MessagePlaceholders placeholders) {
 		Objects.requireNonNull(placeholders, "placeholders");
 		MessagePlaceholders combined = this.placeholders;
-		for (java.util.Map.Entry<String, String> entry : placeholders.asMap().entrySet()) {
+
+		for (Map.Entry<String, String> entry : placeholders.asMap().entrySet()) {
 			combined = combined.with(entry.getKey(), entry.getValue());
 		}
 		return new RosaMessage(this.path, this.templates, this.prefix, this.prefixSeparator,
@@ -126,6 +124,7 @@ public final class RosaMessage {
 		String normalized = template.replace("\\n", "\n");
 		Matcher matcher = PLACEHOLDER.matcher(normalized);
 		StringBuffer output = new StringBuffer();
+
 		while (matcher.find()) {
 			String name = matcher.group(1);
 			String replacement;

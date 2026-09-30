@@ -47,10 +47,12 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 
 	private ServerEnvironment serverEnvironment;
 	private RosaScheduler rosaScheduler;
-	private final HookManager hookManager = new HookManager(this);
+
 	private final List<DatabaseManager> databaseManagers = new ArrayList<>();
 	private final List<ReloadableConfig> managedConfigs = new ArrayList<>();
 	private final List<Command> registeredCommands = new ArrayList<>();
+
+	private HookManager hookManager;
 	private MessageCatalog locale;
 	private RosaMessenger messenger;
 	private RosaBossBarManager bossBars;
@@ -100,11 +102,15 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 			onPluginLoad();
 			this.debug.setup();
 
-			if (usingNMS)
+			hookManager = new HookManager(this);
+
+			if (usingNMS) {
+				this.debug.debug("Server is using NMS");
 				this.nms = NmsResolver.resolve(this,
 						Version.getServerRevisionVersion(),
 						getClass().getClassLoader()
 				);
+			}
 		} catch (Throwable th) {
 			closeDatabases();
 			this.managedConfigs.clear();
@@ -116,6 +122,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 
 	@Override
 	public final void onEnable() {
+		this.debug.debug("Enabling plugin");
 		if (this.emergencyStop) {
 			setEnabled(false);
 			return;
@@ -132,7 +139,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		if (Version.isServerVersionBelow(Version.V1_12_2)) {
 			log(String.format("&7%s %s", getDescription().getName(), getDescription().getVersion()));
 		} else {
-			log(AsciiArtCreator.create().ascii(getDescription().getName()).buildLines(), asciColor);
+			log(AsciiArtCreator.create().ascii(getDescription().getName()).buildLines(), this.asciColor);
 		}
 		log("&7Version &6" + getDescription().getVersion());
 		log("&7By &d" + getDescription().getAuthors());
@@ -151,7 +158,8 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 			this.bossBars = new RosaBossBarManager(this.messenger);
 			this.scoreboards = new RosaScoreboardManager(this);
 			this.holograms = new RosaHologramManager(this);
-			this.hookManager.start();
+
+
 			this.pluginEnableHookStarted = true;
 			onPluginEnable();
 
@@ -176,6 +184,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 
 	@Override
 	public final void onDisable() {
+		this.debug.debug("Disabling plugin");
 		log(" ");
 		log(separator);
 		log(String.format("&7%s %s by &dKio", getDescription().getName(), getDescription().getVersion()));
@@ -209,6 +218,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 
 	private void closeAll() {
 		this.hookManager.close();
+
 		closeHolograms();
 		closeScoreboards();
 		closeBossBars();
@@ -216,9 +226,11 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		closeCooldowns();
 		closeCustomAnvils();
 		closeTabLists();
+
 		if (this.rosaScheduler != null)
 			this.rosaScheduler.cancelAll();
 		this.rosaScheduler = null;
+
 		closeDatabases();
 		this.managedConfigs.clear();
 		this.locale = null;
@@ -252,6 +264,17 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		for (RosaCommand cmd : commands)
 			if (cmd != null)
 				registerCommand(prefix, cmd);
+	}
+
+	protected void registerCommands(RosaCommand... commands) {
+		getDebug().debug("Registering commands...");
+		for (RosaCommand cmd : commands)
+			if (cmd != null)
+				registerCommand(cmd);
+	}
+
+	public final void registerCommand(RosaCommand command) {
+		this.registerCommand(getName(), command);
 	}
 
 	public final void registerCommand(String prefix, RosaCommand command) {
@@ -412,7 +435,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		return this.nms;
 	}
 
-	public void useNMS(boolean nms) {
+	public final void useNMS(boolean nms) {
 		this.usingNMS = nms;
 	}
 
@@ -592,6 +615,10 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		this.console.sendMessage(ColorUtils.color(message));
 	}
 
+	public void log(String... message) {
+		log(Arrays.asList(message));
+	}
+
 	public void log(List<String> message) {
 		log(message, null);
 	}
@@ -606,19 +633,11 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		}
 	}
 
-	public static String getCoreVersion() {
-		return RosaCoreBuildInfo.getVersion();
-	}
-
-	public static String getCoreName() {
-		return "RosaCore";
-	}
-
 	public void checkUpdates(String projectId) {
 		getRosaLogger().info("Checking for updates...");
 
 		String mcVersion = Bukkit.getBukkitVersion().split("-")[0];
-		String platform = "bukkit";
+		String platform = this.getServerEnvironment().getPlatform().name().toLowerCase(Locale.ROOT);
 
 		new ModrinthUpdateChecker(projectId, platform, mcVersion).checkVersion(version -> {
 			this.newPluginVersion = version;
@@ -634,4 +653,13 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 			}
 		});
 	}
+
+	public static String getCoreVersion() {
+		return RosaCoreBuildInfo.getVersion();
+	}
+
+	public static String getCoreName() {
+		return "RosaCore";
+	}
+
 }

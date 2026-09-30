@@ -1,5 +1,6 @@
 package pl.kiosel.rosacore.hook.economy;
 
+import net.milkbowl.vault.economy.Economy;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -10,6 +11,7 @@ public final class VaultEconomyHook extends EconomyHook {
 
 	private Object provider;
 	private Class<?> economyType;
+	private Economy econ = null;
 
 	@Override
 	public String getName() {
@@ -25,45 +27,66 @@ public final class VaultEconomyHook extends EconomyHook {
 	protected boolean onEnable(RosaPlugin plugin) throws Exception {
 		Plugin vault = getDependencyPlugin("Vault");
 		this.economyType = HookReflection.findClass(vault, "net.milkbowl.vault.economy.Economy");
-		return refreshProvider();
+		return refreshProvider() && setupEconomy(plugin);
+	}
+
+	private boolean setupEconomy(RosaPlugin plugin) {
+		if (plugin.getServer().getPluginManager().getPlugin("Vault") == null) {
+			return false;
+		}
+		RegisteredServiceProvider<Economy> rsp = plugin.getServer().getServicesManager().getRegistration(Economy.class);
+		if (rsp == null) {
+			return false;
+		}
+		econ = rsp.getProvider();
+		return econ != null;
 	}
 
 	@Override
 	protected void onDisable() {
 		this.provider = null;
 		this.economyType = null;
+		this.econ = null;
 	}
 
 	@Override
 	public double getBalance(OfflinePlayer player) {
 		validatePlayer(player);
-		try {
+		return econ.getBalance(player);
+		/*try {
 			Object value = HookReflection.invoke(requireProvider(), "getBalance", player);
 			return ((Number) value).doubleValue();
 		} catch (ReflectiveOperationException exception) {
 			throw economyFailure("read a balance", exception);
-		}
+		}*/
 	}
 
 	@Override
 	public boolean hasBalance(OfflinePlayer player, double amount) {
 		validatePlayer(player);
 		validateAmount(amount);
-		try {
+		return econ.has(player, amount);
+		/*try {
 			return Boolean.TRUE.equals(HookReflection.invoke(requireProvider(), "has", player, amount));
 		} catch (ReflectiveOperationException exception) {
 			throw economyFailure("check a balance", exception);
-		}
+		}*/
 	}
 
 	@Override
 	public boolean withdraw(OfflinePlayer player, double amount) {
-		return transaction("withdrawPlayer", validatePlayer(player), validateAmount(amount));
+		validatePlayer(player);
+		validateAmount(amount);
+		return econ.withdrawPlayer(player, amount).transactionSuccess();
+		//return transaction("withdrawPlayer", validatePlayer(player), validateAmount(amount));
 	}
 
 	@Override
 	public boolean deposit(OfflinePlayer player, double amount) {
-		return transaction("depositPlayer", validatePlayer(player), validateAmount(amount));
+		validatePlayer(player);
+		validateAmount(amount);
+		return econ.depositPlayer(player, amount).transactionSuccess();
+		//return transaction("depositPlayer", validatePlayer(player), validateAmount(amount));
 	}
 
 	private boolean transaction(String method, OfflinePlayer player, double amount) {

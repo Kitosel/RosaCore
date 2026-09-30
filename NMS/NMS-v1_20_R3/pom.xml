@@ -5,7 +5,7 @@
     <parent>
         <groupId>pl.kiosel.rosacore</groupId>
         <artifactId>rosacore-parent</artifactId>
-        <version>${revision}</version>
+        <version>0.2.5</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>rosacore-nms-v1_20_R3</artifactId>

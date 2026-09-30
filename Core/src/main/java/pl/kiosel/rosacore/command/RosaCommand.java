@@ -19,13 +19,12 @@ public abstract class RosaCommand extends Command implements TabCompleteUtils {
 
 	protected RosaCommand(RosaPlugin plugin, String command, List<String> aliases, String permission) {
 		this(plugin, command, aliases);
-		this.permission = CommandSupport.emptyToNull(permission);
-		setPermission(this.permission);
+		setPermission(permission);
 	}
 
 	protected RosaCommand(RosaPlugin plugin, String command, List<String> aliases) {
 		this(plugin, command);
-		setAliases(CommandSupport.normalizeAliases(aliases));
+		setAlias(aliases);
 	}
 
 	protected RosaCommand(RosaPlugin plugin, String command) {
@@ -34,6 +33,20 @@ public abstract class RosaCommand extends Command implements TabCompleteUtils {
 		this.command = CommandSupport.normalizeName(command);
 		setDescription("Command " + this.command);
 		setUsage("/" + this.command);
+	}
+
+	public final void setAlias(List<String> aliases) {
+		setAliases(CommandSupport.normalizeAliases(aliases));
+	}
+
+	public final void setAlias(String... aliases) {
+		setAliases(CommandSupport.normalizeAliases(Arrays.asList(aliases)));
+	}
+
+	@Override
+	public final void setPermission(String permission) {
+		this.permission = CommandSupport.emptyToNull(permission);
+		super.setPermission(this.permission);
 	}
 
 	protected final void addSubCommand(RosaSubCommand subCommand) {

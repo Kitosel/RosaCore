@@ -35,7 +35,7 @@ public final class HookManager implements Listener, AutoCloseable {
 	private boolean started;
 
 	public HookManager(RosaPlugin plugin) {
-		this.plugin = Objects.requireNonNull(plugin, "plugin");
+		this.plugin = plugin;
 
 		register(new VaultEconomyHook(), PRIORITY_HIGH);
 		register(new EssentialsXEconomyHook(), PRIORITY_NORMAL);
@@ -49,6 +49,7 @@ public final class HookManager implements Listener, AutoCloseable {
 			refresh();
 			return;
 		}
+		plugin.getDebug().debug("Starting hook manager");
 		this.plugin.getServer().getPluginManager().registerEvents(this, this.plugin);
 		this.started = true;
 		refresh();
@@ -61,6 +62,8 @@ public final class HookManager implements Listener, AutoCloseable {
 	public void register(RosaHook hook, int priority) {
 		Objects.requireNonNull(hook, "hook");
 		String name = normalize(hook.getName());
+		plugin.getDebug().debug("Registering hook: " + name);
+
 		if (name.isEmpty()) throw new IllegalArgumentException("Hook name cannot be empty");
 		if (this.hooks.containsKey(name))
 			throw new IllegalArgumentException("Hook '" + hook.getName() + "' is already registered");
@@ -88,6 +91,7 @@ public final class HookManager implements Listener, AutoCloseable {
 			if (!hook.isEnabled()) enable(hook);
 		}
 		this.economy.refreshActiveHook();
+		plugin.getDebug().debug("Economy hook refreshed");
 	}
 
 	public boolean isEnabled(String name) {
@@ -154,6 +158,7 @@ public final class HookManager implements Listener, AutoCloseable {
 		try {
 			if (hook.enable())
 				this.plugin.getLogger().info("Hooked into " + hook.getName());
+			plugin.getDebug().debug("Enabled hook: " + hook.getName());
 		} catch (Exception | LinkageError exception) {
 			this.plugin.getLogger().log(Level.WARNING,
 					"Could not enable hook '" + hook.getName() + "'", exception);

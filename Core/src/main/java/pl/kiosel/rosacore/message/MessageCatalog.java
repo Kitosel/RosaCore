@@ -144,6 +144,11 @@ public final class MessageCatalog {
 		return this.message(key.getPath(), key.getDefaultMessage());
 	}
 
+	public RosaMessage newMessage(String message) {
+		Objects.requireNonNull(message, "key");
+		return this.message("this.path.do.not.exist:D", message);
+	}
+
 	public RosaMessage message(String path) {
 		return this.message(path, null);
 	}
