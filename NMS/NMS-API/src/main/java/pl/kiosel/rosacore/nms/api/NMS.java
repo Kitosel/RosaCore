@@ -8,12 +8,17 @@ import pl.kiosel.rosacore.nms.api.status.ServerStatusInterceptor;
 import pl.kiosel.rosacore.nms.api.status.ServerStatusInterceptors;
 import pl.kiosel.rosacore.nms.api.tablist.NMSTabListService;
 import pl.kiosel.rosacore.nms.api.tablist.TabListService;
+import pl.kiosel.rosacore.nms.api.toasts.NmsToasts;
 
 public interface NMS {
 
 	CustomAnvilFactory getCustomAnvilFactory();
 
 	NmsServer getNmsServer();
+
+	default NmsToasts getToasts() {
+		return null;
+	}
 
 	default TabListService getTabListService() {
 		return new NMSTabListService();

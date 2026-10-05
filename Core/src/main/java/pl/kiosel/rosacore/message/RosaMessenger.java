@@ -10,12 +10,15 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.RosaPlugin;
+import pl.kiosel.rosacore.nms.api.toasts.NmsToasts;
 import pl.kiosel.rosacore.scheduler.RosaScheduler;
 import pl.kiosel.rosacore.scheduler.RosaTask;
 import pl.kiosel.rosacore.version.MinecraftVersion;
+import pl.kiosel.rosacore.version.Version;
 
 import java.time.Duration;
 import java.util.*;
@@ -24,6 +27,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class RosaMessenger implements AutoCloseable {
+
+	private final RosaPlugin plugin;
 
 	private static final Pattern PLACEHOLDER = Pattern.compile("%([A-Za-z0-9_.-]+)%");
 	private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
@@ -42,12 +47,12 @@ public final class RosaMessenger implements AutoCloseable {
 	private boolean closed;
 
 	public RosaMessenger(RosaPlugin plugin, MinecraftVersion minecraftVersion) {
-		RosaPlugin checkedPlugin = Objects.requireNonNull(plugin, "plugin");
-		this.audiences = BukkitAudiences.create(checkedPlugin);
+		this.plugin = plugin;
+		this.audiences = BukkitAudiences.create(plugin);
 		this.serializer = LegacyComponentSerializer.legacySection();
 		this.colorizer = LegacyColorizer.forVersion(
 				Objects.requireNonNull(minecraftVersion, "minecraftVersion"));
-		this.scheduler = checkedPlugin.getRosaScheduler();
+		this.scheduler = plugin.getRosaScheduler();
 	}
 
 	public void send(CommandSender sender, String message, Object... placeholders) {
@@ -183,6 +188,16 @@ public final class RosaMessenger implements AutoCloseable {
 						 int fadeInTicks, int stayTicks, int fadeOutTicks,
 						 Object... placeholders) {
 		title(player, "", subtitle, fadeInTicks, stayTicks, fadeOutTicks, placeholders);
+	}
+
+	public void sendToast(Player player, String title, Material material, NmsToasts.NmsAdvancementType type) {
+		if (player == null) return;
+		if (!player.isOnline()) return;
+		if (Version.isServerVersionBelow(Version.V1_18)) return;
+		if (plugin.getNMS() == null) return;
+		if (plugin.getNMS().getToasts() == null) return;
+
+		plugin.getNMS().getToasts().sendToast(plugin, player, title, material, type);
 	}
 
 	public void gradientActionBar(Player player, String message,
