@@ -5,8 +5,7 @@ import org.bukkit.entity.Player;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
 
 public final class TabListSkins {
 
@@ -80,11 +79,11 @@ public final class TabListSkins {
 		return type.getMethods();
 	}
 
-	private static java.util.List<Field> fields(Class<?> type) {
-		java.util.List<Field> result = new java.util.ArrayList<>();
+	private static List<Field> fields(Class<?> type) {
+		List<Field> result = new ArrayList<>();
 		Class<?> current = type;
 		while (current != null && current != Object.class) {
-			java.util.Collections.addAll(result, current.getDeclaredFields());
+			Collections.addAll(result, current.getDeclaredFields());
 			current = current.getSuperclass();
 		}
 		return result;

@@ -1,3 +1,5 @@
+[![](https://jitpack.io/v/Kitosel/RosaCore.svg)](https://jitpack.io/#Kitosel/RosaCore)
+
 # RosaCore
 
 RosaCore is a modular Java 8 library embedded and relocated into Minecraft plugins. It is not a standalone server plugin.
@@ -28,8 +30,7 @@ linking modern Folia classes on legacy servers.
 ## Embedding
 
 NMS implementations cover every revision detected by `Version`, from `v1_8_R1` through `v26_3_R1`. Core embeds these modules and `NmsResolver` loads
-the implementation for the running server. See [the NMS revision and build matrix](NMS/README.md) for the server dependencies used to build each
-module.
+the implementation for the running server.
 
 Consumer plugins depend on `rosacore-platform-bukkit`; Maven resolves the API and compatibility modules transitively. Their shade configuration should
 include

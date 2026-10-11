@@ -29,6 +29,12 @@ public final class RosaSettings implements ReloadableConfig {
 		return new RosaSettings(config, schema);
 	}
 
+	public static RosaSettings create(RosaConfig config, SettingsSchema schema) {
+		Objects.requireNonNull(config, "configBuilder");
+		Objects.requireNonNull(schema, "schema");
+		return new RosaSettings(config, schema);
+	}
+
 	public synchronized ConfigLoadResult load() {
 		return this.reload();
 	}

@@ -649,7 +649,7 @@ public final class ReflectiveTabListService implements TabListService {
 				} catch (ClassNotFoundException ignored) {
 				}
 			}
-			throw new ClassNotFoundException("None of the classes exist: " + java.util.Arrays.toString(names));
+			throw new ClassNotFoundException("None of the classes exist: " + Arrays.toString(names));
 		}
 	}
 }

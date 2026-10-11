@@ -3,8 +3,9 @@ package pl.kiosel.rosacore.config.setting;
 import lombok.Getter;
 import pl.kiosel.rosacore.config.ConfigValidator;
 import pl.kiosel.rosacore.config.ConfigView;
-import pl.kiosel.rosacore.config.MutableConfig;
+import pl.kiosel.rosacore.config.RosaConfig;
 
+import java.io.IOException;
 import java.util.*;
 
 public final class SettingsSchema {
@@ -16,6 +17,7 @@ public final class SettingsSchema {
 	private SettingsSchema(Builder builder) {
 		this.settings = Collections.unmodifiableList(new ArrayList<>(builder.settings.values()));
 		Set<SettingKey<?>> identities = Collections.newSetFromMap(new IdentityHashMap<>());
+
 		identities.addAll(this.settings);
 		this.identities = Collections.unmodifiableSet(identities);
 	}
@@ -49,13 +51,20 @@ public final class SettingsSchema {
 		return new SettingsSnapshot(this, values);
 	}
 
-	public int applyMissingDefaults(MutableConfig config) {
+	public int applyMissingDefaults(RosaConfig config) {
 		Objects.requireNonNull(config, "config");
 		int applied = 0;
 		for (SettingKey<?> setting : this.settings) {
 			if (!config.isLocallySet(setting.getPath())) {
 				config.set(setting.getPath(), setting.encodedDefaultValue());
 				applied++;
+			}
+		}
+		if (applied > 0) {
+			try {
+				SettingsYamlTemplate.write(config.getPath(), this);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
 			}
 		}
 		return applied;

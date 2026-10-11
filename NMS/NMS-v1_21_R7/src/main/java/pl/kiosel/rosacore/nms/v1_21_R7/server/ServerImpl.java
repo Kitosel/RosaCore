@@ -6,11 +6,16 @@ import org.bukkit.craftbukkit.v1_21_R7.CraftServer;
 import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.nms.api.server.NmsServer;
+import pl.kiosel.rosacore.nms.api.server.ServerTps;
 
 public class ServerImpl implements NmsServer {
 
 	@Override
 	public double[] getRecentTps() {
+		CraftServer server = (CraftServer) Bukkit.getServer();
+		if (ServerTps.read(server, server.getServer()) != null) {
+			return ServerTps.read(server, server.getServer());
+		}
 		return ((CraftServer) Bukkit.getServer()).getServer().recentTps;
 	}
 

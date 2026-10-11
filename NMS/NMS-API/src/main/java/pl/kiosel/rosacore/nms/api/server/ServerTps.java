@@ -30,8 +30,9 @@ public final class ServerTps {
 			} catch (ReflectiveOperationException | SecurityException ignored) {
 			}
 		}
+		return null;
 
-		throw new IllegalStateException("Server TPS is unavailable via the API and legacy NMS field");
+		//throw new IllegalStateException("Server TPS is unavailable via the API and legacy NMS field");
 	}
 
 	private static double[] invokeTps(Object target) {

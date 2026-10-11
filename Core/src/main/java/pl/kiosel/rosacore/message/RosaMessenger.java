@@ -10,15 +10,12 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
-import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.RosaPlugin;
-import pl.kiosel.rosacore.nms.api.toasts.NmsToasts;
 import pl.kiosel.rosacore.scheduler.RosaScheduler;
 import pl.kiosel.rosacore.scheduler.RosaTask;
 import pl.kiosel.rosacore.version.MinecraftVersion;
-import pl.kiosel.rosacore.version.Version;
 
 import java.time.Duration;
 import java.util.*;
@@ -188,16 +185,6 @@ public final class RosaMessenger implements AutoCloseable {
 						 int fadeInTicks, int stayTicks, int fadeOutTicks,
 						 Object... placeholders) {
 		title(player, "", subtitle, fadeInTicks, stayTicks, fadeOutTicks, placeholders);
-	}
-
-	public void sendToast(Player player, String title, Material material, NmsToasts.NmsAdvancementType type) {
-		if (player == null) return;
-		if (!player.isOnline()) return;
-		if (Version.isServerVersionBelow(Version.V1_18)) return;
-		if (plugin.getNMS() == null) return;
-		if (plugin.getNMS().getToasts() == null) return;
-
-		plugin.getNMS().getToasts().sendToast(plugin, player, title, material, type);
 	}
 
 	public void gradientActionBar(Player player, String message,

@@ -110,12 +110,9 @@ final class ReflectiveTabPacketInterceptor implements TabPacketInterceptor {
 	private void uninstall(final Binding binding) {
 		binding.listeners.clear();
 		if (!binding.channel.isOpen()) return;
-		runOnEventLoop(binding.channel, new Runnable() {
-			@Override
-			public void run() {
-				ChannelPipeline pipeline = binding.channel.pipeline();
-				if (pipeline.get(binding.handlerName) != null) pipeline.remove(binding.handlerName);
-			}
+		runOnEventLoop(binding.channel, () -> {
+			ChannelPipeline pipeline = binding.channel.pipeline();
+			if (pipeline.get(binding.handlerName) != null) pipeline.remove(binding.handlerName);
 		});
 	}
 

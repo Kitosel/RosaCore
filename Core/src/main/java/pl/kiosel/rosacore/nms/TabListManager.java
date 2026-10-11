@@ -35,12 +35,14 @@ public final class TabListManager implements Listener, AutoCloseable {
 
 	public TabListManager(RosaPlugin plugin, TabListService service, TabPacketInterceptor packets,
 						  ServerStatusInterceptor statusPackets) {
-		this.plugin = Objects.requireNonNull(plugin, "plugin");
+		this.plugin = plugin;
 		this.service = Objects.requireNonNull(service, "service");
 		this.packets = Objects.requireNonNull(packets, "packets");
 		this.statusPackets = Objects.requireNonNull(statusPackets, "statusPackets");
+
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
-		for (Player player : Bukkit.getOnlinePlayers()) subscribe(player);
+		for (Player player : Bukkit.getOnlinePlayers())
+			subscribe(player);
 	}
 
 	@EventHandler

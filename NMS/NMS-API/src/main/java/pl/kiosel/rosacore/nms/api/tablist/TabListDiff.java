@@ -3,6 +3,7 @@ package pl.kiosel.rosacore.nms.api.tablist;
 import org.bukkit.GameMode;
 
 import java.util.Objects;
+import java.util.UUID;
 
 public final class TabListDiff {
 
@@ -61,7 +62,7 @@ public final class TabListDiff {
 		return !recreate && !textChanged && !pingChanged && !gameModeChanged;
 	}
 
-	private static java.util.UUID uniqueId(TabListCell cell) {
+	private static UUID uniqueId(TabListCell cell) {
 		return cell == null ? null : cell.getUniqueId();
 	}
 

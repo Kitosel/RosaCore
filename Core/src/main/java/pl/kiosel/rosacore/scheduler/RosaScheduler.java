@@ -28,11 +28,8 @@ public interface RosaScheduler {
 	RosaTask runForEntityLater(Entity entity, Runnable task, Runnable retired, long delayTicks);
 
 	RosaTask runForEntityTimer(
-			Entity entity,
-			Runnable task,
-			Runnable retired,
-			long delayTicks,
-			long periodTicks
+			Entity entity, Runnable task, Runnable retired,
+			long delayTicks, long periodTicks
 	);
 
 	void cancelAll();

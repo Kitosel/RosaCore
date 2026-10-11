@@ -450,6 +450,25 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		return config;
 	}
 
+	protected final RosaSettings loadSettings(RosaConfig config, SettingsSchema schema) {
+		Objects.requireNonNull(config, "config");
+		Objects.requireNonNull(schema, "settings schema");
+		RosaSettings settings = RosaSettings.create(
+				config,
+				schema
+		);
+		ConfigLoadResult result = settings.load();
+
+		if (!result.isSuccess()) {
+			throw configFailure(settings, result);
+		}
+
+		if (!managedConfigs.contains(config))
+			this.managedConfigs.add(settings);
+		debug.debug("Loaded settings: " + config);
+		return settings;
+	}
+
 	protected final RosaSettings loadSettings(String relativePath, SettingsSchema schema) {
 		Objects.requireNonNull(relativePath, "file");
 		Objects.requireNonNull(schema, "settings schema");

@@ -48,7 +48,8 @@ public final class ServerStatusPacketEvent {
 	public void setSample(Collection<ServerStatusSample> profiles) {
 		sample.clear();
 		if (profiles != null) {
-			for (ServerStatusSample profile : profiles) if (profile != null) sample.add(profile);
+			for (ServerStatusSample profile : profiles)
+				addSample(profile);
 		}
 	}
 
