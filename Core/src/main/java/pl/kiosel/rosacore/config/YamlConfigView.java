@@ -88,6 +88,16 @@ final class YamlConfigView implements MutableConfig {
 	}
 
 	@Override
+	public float getFloat(String path) {
+		return (float) this.section.getDouble(path);
+	}
+
+	@Override
+	public float getFloat(String path, double fallback) {
+		return (float) this.section.getDouble(path, fallback);
+	}
+
+	@Override
 	public List<String> getStringList(String path) {
 		return new ArrayList<>(this.section.getStringList(path));
 	}

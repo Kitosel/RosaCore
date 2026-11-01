@@ -5,6 +5,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
+import pl.kiosel.rosacore.config.setting.SettingsSchema;
+import pl.kiosel.rosacore.config.setting.SettingsYamlTemplate;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -24,8 +26,10 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 	private final String versionPath;
 	@Getter private final int targetVersion;
 	private final boolean backupMigrations;
+	@Getter private final boolean editable;
 	private final Map<Integer, MigrationRegistration> migrations;
 	private final List<ConfigValidator> validators;
+	private SettingsSchema settingsSchema;
 
 	private YamlConfiguration active = new YamlConfiguration();
 	private YamlConfiguration activeDefaults;
@@ -46,6 +50,7 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 		this.versionPath = builder.versionPath;
 		this.targetVersion = builder.targetVersion;
 		this.backupMigrations = builder.backupMigrations;
+		this.editable = builder.editable;
 		this.migrations = Collections.unmodifiableMap(new LinkedHashMap<>(builder.migrations));
 		this.validators = Collections.unmodifiableList(new ArrayList<>(builder.validators));
 	}
@@ -144,7 +149,7 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 			return ConfigSaveResult.failure(problems, null);
 		}
 		try {
-			this.atomicWrite(this.active.saveToString().getBytes(StandardCharsets.UTF_8));
+			this.atomicWrite(this.serializeActive().getBytes(StandardCharsets.UTF_8));
 			this.dirty = false;
 			return ConfigSaveResult.success();
 		} catch (IOException exception) {
@@ -173,6 +178,23 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 
 	public synchronized boolean isDirty() {
 		return this.dirty;
+	}
+
+	public synchronized void attachSettingsSchema(SettingsSchema schema) {
+		this.settingsSchema = Objects.requireNonNull(schema, "schema");
+	}
+
+	public synchronized List<String> getSettingDocumentation(String path) {
+		if (this.settingsSchema == null) return Collections.emptyList();
+		for (pl.kiosel.rosacore.config.setting.SettingKey<?> setting : this.settingsSchema.getSettings()) {
+			if (setting.getPath().equals(path)) {
+				List<String> lines = new ArrayList<>(setting.getComments());
+				lines.addAll(setting.getDescription());
+				if (setting.isSensitive()) lines.add("Sensitive value. Do not share it.");
+				return Collections.unmodifiableList(lines);
+			}
+		}
+		return Collections.emptyList();
 	}
 
 	public File getFile() {
@@ -274,8 +296,16 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 		return this.active.getDouble(path, fallback);
 	}
 
-	public synchronized float getFloat(String path, float fallback) {
-		return (float) getDouble(path, fallback);
+	@Override
+	public synchronized float getFloat(String path) {
+		this.ensureLoaded();
+		return (float) this.active.getDouble(path);
+	}
+
+	@Override
+	public synchronized float getFloat(String path, double fallback) {
+		this.ensureLoaded();
+		return (float) this.active.getDouble(path, fallback);
 	}
 
 	@Override
@@ -288,6 +318,14 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 	public synchronized ConfigurationSection getConfigurationSection(String path) {
 		this.ensureLoaded();
 		return this.active.getConfigurationSection(path);
+	}
+
+	public synchronized Set<String> getKeys(String sectionPath, boolean deep) {
+		this.ensureLoaded();
+		ConfigurationSection section = sectionPath == null || sectionPath.isEmpty()
+				? this.active : this.active.getConfigurationSection(sectionPath);
+		if (section == null) return Collections.emptySet();
+		return Collections.unmodifiableSet(new LinkedHashSet<>(section.getKeys(deep)));
 	}
 
 	@Override
@@ -394,6 +432,14 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 						+ (exception.getMessage() == null ? "" : " - " + exception.getMessage()));
 			}
 		}
+		if (this.settingsSchema != null) {
+			try {
+				this.settingsSchema.validator().validate(view, context);
+			} catch (RuntimeException exception) {
+				context.error("", "Settings validation failed: " + exception.getClass().getSimpleName()
+						+ (exception.getMessage() == null ? "" : " - " + exception.getMessage()));
+			}
+		}
 		return context.getProblems();
 	}
 
@@ -429,6 +475,11 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 		}
 	}
 
+	private String serializeActive() {
+		String yaml = this.active.saveToString();
+		return this.settingsSchema == null ? yaml : SettingsYamlTemplate.withComments(yaml, this.settingsSchema);
+	}
+
 	private static YamlConfiguration loadYaml(byte[] bytes) throws InvalidConfigurationException {
 		YamlConfiguration yaml = new YamlConfiguration();
 		yaml.loadFromString(new String(bytes, StandardCharsets.UTF_8));
@@ -451,6 +502,7 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 		private String versionPath = "config-version";
 		private int targetVersion;
 		private boolean backupMigrations = true;
+		private boolean editable = true;
 		private final Map<Integer, MigrationRegistration> migrations = new LinkedHashMap<>();
 		private final List<ConfigValidator> validators = new ArrayList<>();
 
@@ -508,6 +560,11 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 
 		public Builder backupMigrations(boolean backupMigrations) {
 			this.backupMigrations = backupMigrations;
+			return this;
+		}
+
+		public Builder editable(boolean editable) {
+			this.editable = editable;
 			return this;
 		}
 

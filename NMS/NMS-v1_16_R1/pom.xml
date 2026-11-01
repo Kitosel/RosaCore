@@ -4,9 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>pl.kiosel.rosacore</groupId>
-        <artifactId>rosacore-parent</artifactId>
-        <version>0.2.7</version>
-        <relativePath>../../pom.xml</relativePath>
+        <artifactId>rosacore-nms-parent</artifactId>
+        <version>0.2.8</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>rosacore-nms-v1_16_R1</artifactId>
 

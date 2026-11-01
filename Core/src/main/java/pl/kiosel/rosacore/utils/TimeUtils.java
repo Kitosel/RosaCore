@@ -104,6 +104,13 @@ public class TimeUtils {
 		}
 	}
 
+	public static Duration durationFromTicks(int ticks) {
+		if (ticks < 0) {
+			throw new IllegalArgumentException("Title duration cannot be negative: " + ticks);
+		}
+		return Duration.ofMillis(Math.multiplyExact(ticks, 50L));
+	}
+
 	public static ZoneId readZoneId(String zoneId) {
 		try {
 			if (zoneId == null || zoneId.trim().isEmpty()) return ZoneId.systemDefault();

@@ -1,5 +1,6 @@
 package pl.kiosel.rosacore.message;
 
+import lombok.Getter;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.entity.Player;
@@ -13,11 +14,11 @@ public final class RosaBossBar implements AutoCloseable {
 	private final BossBar handle;
 	private final Map<UUID, Audience> viewers = new LinkedHashMap<>();
 
-	private String text;
-	private float progress;
-	private Color color;
-	private Style style;
-	private boolean closed;
+	@Getter private String text;
+	@Getter private float progress;
+	@Getter private Color color;
+	@Getter private Style style;
+	@Getter private boolean closed;
 
 	RosaBossBar(RosaBossBarManager owner, RosaMessenger messenger, String text, float progress,
 				Color color, Style style, Object... placeholders) {
@@ -35,7 +36,7 @@ public final class RosaBossBar implements AutoCloseable {
 		);
 	}
 
-	public synchronized RosaBossBar show(Player player) {
+	public RosaBossBar show(Player player) {
 		ensureOpen();
 		Objects.requireNonNull(player, "player");
 		Audience audience = this.messenger.playerAudience(player);
@@ -45,13 +46,13 @@ public final class RosaBossBar implements AutoCloseable {
 		return this;
 	}
 
-	public synchronized RosaBossBar show(Player... players) {
+	public RosaBossBar show(Player... players) {
 		Objects.requireNonNull(players, "players");
 		for (Player player : players) show(player);
 		return this;
 	}
 
-	public synchronized RosaBossBar hide(Player player) {
+	public RosaBossBar hide(Player player) {
 		ensureOpen();
 		Objects.requireNonNull(player, "player");
 		Audience audience = this.viewers.remove(player.getUniqueId());
@@ -59,34 +60,30 @@ public final class RosaBossBar implements AutoCloseable {
 		return this;
 	}
 
-	public synchronized RosaBossBar hideAll() {
+	public RosaBossBar hideAll() {
 		ensureOpen();
 		hideAllInternal();
 		return this;
 	}
 
-	public synchronized boolean isShown(Player player) {
+	public boolean isShown(Player player) {
 		ensureOpen();
 		return this.viewers.containsKey(Objects.requireNonNull(player, "player").getUniqueId());
 	}
 
-	public synchronized Set<UUID> getViewerIds() {
+	public Set<UUID> getViewerIds() {
 		ensureOpen();
 		return Collections.unmodifiableSet(new LinkedHashSet<>(this.viewers.keySet()));
 	}
 
-	public synchronized RosaBossBar setText(String text, Object... placeholders) {
+	public RosaBossBar setText(String text, Object... placeholders) {
 		ensureOpen();
 		this.handle.name(this.messenger.component(text, placeholders));
 		this.text = Objects.requireNonNull(text, "text");
 		return this;
 	}
 
-	public synchronized String getText() {
-		return this.text;
-	}
-
-	public synchronized RosaBossBar setProgress(float progress) {
+	public RosaBossBar setProgress(float progress) {
 		ensureOpen();
 		float checked = validateProgress(progress);
 		this.handle.progress(checked);
@@ -94,11 +91,7 @@ public final class RosaBossBar implements AutoCloseable {
 		return this;
 	}
 
-	public synchronized float getProgress() {
-		return this.progress;
-	}
-
-	public synchronized RosaBossBar setColor(Color color) {
+	public RosaBossBar setColor(Color color) {
 		ensureOpen();
 		Color checked = Objects.requireNonNull(color, "color");
 		this.handle.color(checked.adventure());
@@ -106,11 +99,7 @@ public final class RosaBossBar implements AutoCloseable {
 		return this;
 	}
 
-	public synchronized Color getColor() {
-		return this.color;
-	}
-
-	public synchronized RosaBossBar setStyle(Style style) {
+	public RosaBossBar setStyle(Style style) {
 		ensureOpen();
 		Style checked = Objects.requireNonNull(style, "style");
 		this.handle.overlay(checked.adventure());
@@ -118,46 +107,38 @@ public final class RosaBossBar implements AutoCloseable {
 		return this;
 	}
 
-	public synchronized Style getStyle() {
-		return this.style;
-	}
-
-	public synchronized RosaBossBar addFlag(Flag flag) {
+	public RosaBossBar addFlag(Flag flag) {
 		ensureOpen();
 		this.handle.addFlag(Objects.requireNonNull(flag, "flag").adventure());
 		return this;
 	}
 
-	public synchronized RosaBossBar removeFlag(Flag flag) {
+	public RosaBossBar removeFlag(Flag flag) {
 		ensureOpen();
 		this.handle.removeFlag(Objects.requireNonNull(flag, "flag").adventure());
 		return this;
 	}
 
-	public synchronized RosaBossBar clearFlags() {
+	public RosaBossBar clearFlags() {
 		ensureOpen();
 		this.handle.flags(Collections.emptySet());
 		return this;
 	}
 
-	public synchronized boolean hasFlag(Flag flag) {
+	public boolean hasFlag(Flag flag) {
 		ensureOpen();
 		return this.handle.hasFlag(Objects.requireNonNull(flag, "flag").adventure());
 	}
 
-	public synchronized Set<Flag> getFlags() {
+	public Set<Flag> getFlags() {
 		ensureOpen();
 		Set<Flag> flags = EnumSet.noneOf(Flag.class);
 		for (BossBar.Flag flag : this.handle.flags()) flags.add(Flag.valueOf(flag.name()));
 		return Collections.unmodifiableSet(flags);
 	}
 
-	public synchronized boolean isClosed() {
-		return this.closed;
-	}
-
 	@Override
-	public synchronized void close() {
+	public void close() {
 		if (this.closed) return;
 		this.closed = true;
 		try {

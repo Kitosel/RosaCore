@@ -6,9 +6,9 @@
 
     <parent>
         <groupId>pl.kiosel.rosacore</groupId>
-        <artifactId>rosacore-parent</artifactId>
-        <version>0.2.7</version>
-        <relativePath>../../pom.xml</relativePath>
+        <artifactId>rosacore-nms-parent</artifactId>
+        <version>0.2.8</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>RosaCore-NMS-API</artifactId>
 
@@ -46,12 +46,6 @@
             <artifactId>rosacore-compat</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

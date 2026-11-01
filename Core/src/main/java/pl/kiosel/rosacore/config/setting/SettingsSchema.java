@@ -5,7 +5,6 @@ import pl.kiosel.rosacore.config.ConfigValidator;
 import pl.kiosel.rosacore.config.ConfigView;
 import pl.kiosel.rosacore.config.RosaConfig;
 
-import java.io.IOException;
 import java.util.*;
 
 public final class SettingsSchema {
@@ -60,13 +59,6 @@ public final class SettingsSchema {
 				applied++;
 			}
 		}
-		if (applied > 0) {
-			try {
-				SettingsYamlTemplate.write(config.getPath(), this);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
 		return applied;
 	}
 
@@ -98,6 +90,7 @@ public final class SettingsSchema {
 			}
 			return this;
 		}
+
 
 		public SettingsSchema build() {
 			return new SettingsSchema(this);

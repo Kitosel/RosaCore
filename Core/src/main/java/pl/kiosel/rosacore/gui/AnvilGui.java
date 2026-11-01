@@ -37,12 +37,12 @@ public class AnvilGui extends Gui {
 	}
 
 	@Override
-	public int getSize() {
+	public final int getSize() {
 		return 3;
 	}
 
 	@Override
-	public AnvilGui setRows(int rows) {
+	public final AnvilGui setRows(int rows) {
 		if (rows != 1) throw new IllegalArgumentException("AnvilGui always has one row");
 		return this;
 	}
@@ -236,6 +236,7 @@ public class AnvilGui extends Gui {
 		this.inputText = text == null ? "" : text;
 		this.inputTextConfigured = true;
 		updateOutputPrompt();
+
 		if (textChangeHandler != null) textChangeHandler.accept(this.inputText);
 		onTextChange(this.inputText);
 	}
@@ -255,10 +256,13 @@ public class AnvilGui extends Gui {
 
 	private void syncInputName() {
 		if (!inputTextConfigured) return;
+
 		ItemStack input = getInput();
 		if (input == null || input.getType() == Material.AIR) return;
+
 		ItemMeta meta = input.getItemMeta();
 		if (meta == null) return;
+
 		meta.setDisplayName(inputText.isEmpty() ? " " : inputText);
 		input.setItemMeta(meta);
 		setItem(CustomAnvil.LEFT_INPUT_SLOT, input);
@@ -266,6 +270,7 @@ public class AnvilGui extends Gui {
 
 	private void updateOutputPrompt() {
 		if (outputPrompt == null) return;
+
 		ItemStack input = cellItems.get(CustomAnvil.LEFT_INPUT_SLOT);
 		if (input == null || input.getType() == Material.AIR) return;
 
@@ -274,7 +279,9 @@ public class AnvilGui extends Gui {
 		if (meta != null) {
 			meta.setDisplayName(inputText.isEmpty() ? " " : inputText);
 			List<String> lore = new ArrayList<>(outputPrompt.size());
-			for (String line : outputPrompt) lore.add(ColorUtils.color(line == null ? "" : "&f" + line));
+
+			for (String line : outputPrompt)
+				lore.add(ColorUtils.color(line == null ? "" : "&f" + line));
 			meta.setLore(lore);
 			output.setItemMeta(meta);
 		}

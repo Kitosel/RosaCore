@@ -12,11 +12,19 @@ public class ServerImpl implements NmsServer {
 
 	@Override
 	public double[] getRecentTps() {
-		CraftServer server = (CraftServer) Bukkit.getServer();
-		if (ServerTps.read(server, server.getServer()) != null) {
-			return ServerTps.read(server, server.getServer());
+		try {
+			return ((CraftServer) Bukkit.getServer()).getServer().recentTps;
+		} catch (Throwable e) {
+			try {
+				CraftServer server = (CraftServer) Bukkit.getServer();
+				if (ServerTps.read(server, server.getServer()) != null) {
+					return ServerTps.read(server, server.getServer());
+				}
+			} catch (Throwable ex) {
+				throw new RuntimeException("Unable to get recent TPS", ex);
+			}
 		}
-		return ((CraftServer) Bukkit.getServer()).getServer().recentTps;
+		return new double[0];
 	}
 
 	@Override

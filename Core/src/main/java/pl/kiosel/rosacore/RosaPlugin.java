@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import pl.kiosel.rosacore.api.RosaApi;
@@ -16,14 +17,19 @@ import pl.kiosel.rosacore.compatibility.ZColor;
 import pl.kiosel.rosacore.config.ConfigLoadResult;
 import pl.kiosel.rosacore.config.ReloadableConfig;
 import pl.kiosel.rosacore.config.RosaConfig;
+import pl.kiosel.rosacore.config.editor.RosaConfigEditorGui;
+import pl.kiosel.rosacore.config.editor.RosaConfigListGui;
 import pl.kiosel.rosacore.config.setting.RosaSettings;
+import pl.kiosel.rosacore.config.setting.SettingsEditorGui;
 import pl.kiosel.rosacore.config.setting.SettingsSchema;
 import pl.kiosel.rosacore.cooldown.RosaCooldowns;
 import pl.kiosel.rosacore.database.DatabaseManager;
 import pl.kiosel.rosacore.database.DatabaseMigration;
 import pl.kiosel.rosacore.database.DatabaseSettings;
+import pl.kiosel.rosacore.gui.GuiManager;
 import pl.kiosel.rosacore.hologram.RosaHologramManager;
 import pl.kiosel.rosacore.hook.HookManager;
+import pl.kiosel.rosacore.input.ChatInput;
 import pl.kiosel.rosacore.input.Debug;
 import pl.kiosel.rosacore.listener.RosaListener;
 import pl.kiosel.rosacore.message.*;
@@ -47,6 +53,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 
 	private ServerEnvironment serverEnvironment;
 	private RosaScheduler rosaScheduler;
+	private GuiManager guiManager;
 
 	private final List<DatabaseManager> databaseManagers = new ArrayList<>();
 	private final List<ReloadableConfig> managedConfigs = new ArrayList<>();
@@ -133,6 +140,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		this.pluginEnableHookStarted = false;
 		this.pluginDisableHookCompleted = false;
 		this.rosaScheduler = RosaSchedulers.create(this, this.serverEnvironment);
+		this.guiManager = new GuiManager(this);
 
 		log(" ");
 		log(separator);
@@ -162,6 +170,8 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 
 			this.pluginEnableHookStarted = true;
 			onPluginEnable();
+
+			ChatInput.registerListener(this);
 
 			if (this.emergencyStop) {
 				log(errorSeparator);
@@ -217,6 +227,10 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	public abstract void onConfigReload();
 
 	private void closeAll() {
+		if (this.guiManager != null) {
+			this.guiManager.close();
+			this.guiManager = null;
+		}
 		this.hookManager.close();
 
 		closeHolograms();
@@ -354,6 +368,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 
 	private void unregisterCommands() {
 		if (this.registeredCommands.isEmpty()) return;
+		debug.debug("Unregistering commands...");
 		try {
 			Map<String, Command> knownCommands = ReflectionUtils.getKnownCommands(ReflectionUtils.getCommandMap());
 			for (int index = this.registeredCommands.size() - 1; index >= 0; index--) {
@@ -439,8 +454,32 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		this.usingNMS = nms;
 	}
 
+	public final GuiManager getGuiManager() {
+		if (this.guiManager == null)
+			throw new IllegalStateException("GUI manager is unavailable before onEnable or after onDisable");
+		return this.guiManager;
+	}
+
+	public final void openSettingsEditor(Player player, RosaSettings settings) {
+		new SettingsEditorGui(this, settings).show(getGuiManager(), player);
+	}
+
+	public final void openConfigEditor(Player player) {
+		new RosaConfigListGui(this).show(getGuiManager(), player);
+	}
+
+	public final void openConfigEditor(Player player, RosaConfig config) {
+		Objects.requireNonNull(config, "config");
+		if (!config.isEditable()) throw new IllegalArgumentException("Configuration is read-only: " + config.getPath());
+		new RosaConfigEditorGui(this, config).show(getGuiManager(), player);
+	}
+
 	protected final RosaConfig loadConfig(String relativePath) {
-		RosaConfig config = new RosaConfig(this, relativePath);
+		return loadConfig(relativePath, true);
+	}
+
+	protected final RosaConfig loadConfig(String relativePath, boolean editable) {
+		RosaConfig config = RosaConfig.builder(this, relativePath).editable(editable).build();
 		ConfigLoadResult result = config.load();
 		if (!result.isSuccess()) {
 			throw configFailure(config, result);
@@ -448,6 +487,20 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		this.managedConfigs.add(config);
 		debug.debug("Loaded config: " + relativePath);
 		return config;
+	}
+
+	public final void addManagedConfig(RosaConfig config) {
+		this.addManagedConfig(config, false);
+	}
+
+	public final void addManagedConfig(RosaConfig config, boolean force) {
+		Objects.requireNonNull(config, "config");
+		if (!config.isLoaded() && !force) {
+			getRosaLogger().info("Config is not loaded: " + config.getPath());
+			return;
+		}
+		this.managedConfigs.add(config);
+		debug.debug("Added managed config: " + config.getPath());
 	}
 
 	protected final RosaSettings loadSettings(RosaConfig config, SettingsSchema schema) {
@@ -463,8 +516,12 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 			throw configFailure(settings, result);
 		}
 
-		if (!managedConfigs.contains(config))
+		int configIndex = this.managedConfigs.indexOf(config);
+		if (configIndex >= 0) {
+			this.managedConfigs.set(configIndex, settings);
+		} else if (!this.managedConfigs.contains(settings)) {
 			this.managedConfigs.add(settings);
+		}
 		debug.debug("Loaded settings: " + config);
 		return settings;
 	}

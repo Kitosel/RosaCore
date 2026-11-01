@@ -15,17 +15,15 @@ import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.RosaPlugin;
 import pl.kiosel.rosacore.scheduler.RosaScheduler;
 import pl.kiosel.rosacore.scheduler.RosaTask;
+import pl.kiosel.rosacore.utils.TimeUtils;
 import pl.kiosel.rosacore.version.MinecraftVersion;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class RosaMessenger implements AutoCloseable {
-
-	private final RosaPlugin plugin;
 
 	private static final Pattern PLACEHOLDER = Pattern.compile("%([A-Za-z0-9_.-]+)%");
 	private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
@@ -44,7 +42,6 @@ public final class RosaMessenger implements AutoCloseable {
 	private boolean closed;
 
 	public RosaMessenger(RosaPlugin plugin, MinecraftVersion minecraftVersion) {
-		this.plugin = plugin;
 		this.audiences = BukkitAudiences.create(plugin);
 		this.serializer = LegacyComponentSerializer.legacySection();
 		this.colorizer = LegacyColorizer.forVersion(
@@ -153,9 +150,9 @@ public final class RosaMessenger implements AutoCloseable {
 						   int fadeInTicks, int stayTicks, int fadeOutTicks,
 						   Object... placeholders) {
 		Title.Times times = Title.Times.times(
-				durationFromTicks(fadeInTicks),
-				durationFromTicks(stayTicks),
-				durationFromTicks(fadeOutTicks)
+				TimeUtils.durationFromTicks(fadeInTicks),
+				TimeUtils.durationFromTicks(stayTicks),
+				TimeUtils.durationFromTicks(fadeOutTicks)
 		);
 		Title rendered = Title.title(
 				component(title, placeholders),
@@ -317,12 +314,7 @@ public final class RosaMessenger implements AutoCloseable {
 				|| normalized == 'r';
 	}
 
-	static Duration durationFromTicks(int ticks) {
-		if (ticks < 0) {
-			throw new IllegalArgumentException("Title duration cannot be negative: " + ticks);
-		}
-		return Duration.ofMillis(Math.multiplyExact((long) ticks, 50L));
-	}
+
 
 	static String gradientColor(String color) {
 		String value = Objects.requireNonNull(color, "color").trim().toLowerCase(Locale.ROOT);

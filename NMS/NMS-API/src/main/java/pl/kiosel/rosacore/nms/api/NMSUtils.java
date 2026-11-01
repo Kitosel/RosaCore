@@ -2,6 +2,7 @@ package pl.kiosel.rosacore.nms.api;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.entity.Player;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -14,6 +15,27 @@ public class NMSUtils {
 
 	public static String color(String value) {
 		return ChatColor.translateAlternateColorCodes('&', value == null ? "" : value);
+	}
+
+	public static Object getPlayerHandle(Player player) {
+		try {
+			Class<?> craftPlayerClass = player.getClass();
+			Method getHandleMethod = craftPlayerClass.getMethod("getHandle");
+			return getHandleMethod.invoke(player);
+		} catch (Exception e) {
+			throw new RuntimeException("Can not find handle for player " + player.getName(), e);
+		}
+	}
+
+	public static Object getWorldHandle(Player player) {
+		try {
+			Object craftWorld = player.getWorld();
+			Class<?> craftWorldClass = craftWorld.getClass();
+			Method getHandleMethod = craftWorldClass.getMethod("getHandle");
+			return getHandleMethod.invoke(craftWorld);
+		} catch (Exception e) {
+			throw new RuntimeException("Can not find World handle for player " + player.getName(), e);
+		}
 	}
 
 	public static Field findField(Class<?> type, String name) throws NoSuchFieldException {

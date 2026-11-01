@@ -44,7 +44,7 @@ public class Debug {
 	}
 
 	public synchronized void close() {
-		if (writer == null) return;
+		if (ensureAvailable()) return;
 
 		try {
 			if (plugin.isDev()) debug("Closing debug");
@@ -57,8 +57,7 @@ public class Debug {
 	}
 
 	public synchronized void debug(String message) {
-		if (writer == null) return;
-		if (!plugin.isDev()) return;
+		if (ensureAvailable()) return;
 
 		try {
 			plugin.getRosaLogger().info(message);
@@ -73,8 +72,7 @@ public class Debug {
 	}
 
 	public synchronized void error(String message) {
-		if (writer == null) return;
-		if (!plugin.isDev()) return;
+		if (ensureAvailable()) return;
 
 		try {
 			plugin.getRosaLogger().warning(message);
@@ -89,13 +87,17 @@ public class Debug {
 	}
 
 	public synchronized void debug(Throwable throwable) {
-		if (writer == null) return;
+		if (ensureAvailable()) return;
 		if (throwable == null) return;
-		if (!plugin.isDev()) return;
 
 		PrintWriter pw = new PrintWriter(writer);
 		throwable.printStackTrace(pw);
 		pw.flush();
+	}
+
+	private synchronized boolean ensureAvailable() {
+		if (writer == null) return true;
+		return !plugin.isDev();
 	}
 
 	public void debug(String message, Throwable throwable) {

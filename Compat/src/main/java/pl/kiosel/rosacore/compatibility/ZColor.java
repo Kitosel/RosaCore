@@ -42,6 +42,17 @@ public enum ZColor {
 		this.isColor = isColor;
 	}
 
+	public static ZColor get(String color) {
+		return get(color, ZColor.WHITE);
+	}
+
+	public static ZColor get(String color, ZColor fallback) {
+		if (color == null) return fallback;
+		String formated = color.toUpperCase().replace("-", "_").replace(" ", "_").replace(":", "_");
+		ZColor zColor = valueOf(formated);
+		return zColor == null ? fallback : zColor;
+	}
+
 	static {
 		for (ZColor color : values()) {
 			BY_CHAR.put(color.code, color);

@@ -38,6 +38,10 @@ public interface ConfigView {
 
 	double getDouble(String path, double fallback);
 
+	float getFloat(String path);
+
+	float getFloat(String path, double fallback);
+
 	List<String> getStringList(String path);
 
 	ConfigurationSection getConfigurationSection(String path);

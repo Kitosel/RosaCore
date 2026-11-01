@@ -25,13 +25,15 @@ public final class RosaSettings implements ReloadableConfig {
 	public static RosaSettings create(RosaConfig.Builder configBuilder, SettingsSchema schema) {
 		Objects.requireNonNull(configBuilder, "configBuilder");
 		Objects.requireNonNull(schema, "schema");
-		RosaConfig config = configBuilder.validator(schema.validator()).build();
+		RosaConfig config = configBuilder.build();
+		config.attachSettingsSchema(schema);
 		return new RosaSettings(config, schema);
 	}
 
 	public static RosaSettings create(RosaConfig config, SettingsSchema schema) {
 		Objects.requireNonNull(config, "configBuilder");
 		Objects.requireNonNull(schema, "schema");
+		config.attachSettingsSchema(schema);
 		return new RosaSettings(config, schema);
 	}
 
@@ -43,6 +45,12 @@ public final class RosaSettings implements ReloadableConfig {
 	public synchronized ConfigLoadResult reload() {
 		ConfigLoadResult result = this.config.reload();
 		if (result.isSuccess()) {
+			this.schema.applyMissingDefaults(this.config);
+			ConfigSaveResult saved = this.config.save();
+			if (!saved.isSuccess()) {
+				return ConfigLoadResult.failed(this.config.getPath().toString(),
+						"Could not write settings defaults and comments", saved.getCause());
+			}
 			this.active = this.readSnapshot();
 		}
 		return result;
@@ -54,6 +62,36 @@ public final class RosaSettings implements ReloadableConfig {
 
 	public SettingsSnapshot snapshot() {
 		return this.requireSnapshot();
+	}
+
+	public synchronized <T> ConfigSaveResult set(SettingKey<T> setting, T value) {
+		Objects.requireNonNull(setting, "setting");
+		Objects.requireNonNull(value, "value");
+		if (!this.schema.contains(setting)) {
+			throw new IllegalArgumentException("Setting does not belong to this schema: " + setting.getPath());
+		}
+		try {
+			setting.validateValue(value);
+		} catch (SettingValueException exception) {
+			throw new IllegalArgumentException(exception.getMessage(), exception);
+		}
+		this.config.set(setting.getPath(), setting.encodeValue(value));
+		ConfigSaveResult result = this.config.save();
+		if (result.isSuccess()) this.active = this.readSnapshot();
+		return result;
+	}
+
+	public synchronized ConfigSaveResult setInput(SettingKey<?> setting, String input) throws SettingValueException {
+		Objects.requireNonNull(setting, "setting");
+		if (!this.schema.contains(setting)) {
+			throw new IllegalArgumentException("Setting does not belong to this schema: " + setting.getPath());
+		}
+		return decodeAndSet(setting, input);
+	}
+
+	private <T> ConfigSaveResult decodeAndSet(SettingKey<T> setting, String input)
+			throws SettingValueException {
+		return this.set(setting, setting.decodeInput(input));
 	}
 
 	public synchronized ConfigSaveResult writeMissingDefaults() {
@@ -81,7 +119,9 @@ public final class RosaSettings implements ReloadableConfig {
 
 	private SettingsSnapshot readSnapshot() {
 		try {
-			return this.schema.read(this.config.snapshot());
+			SettingsSnapshot snapshot = this.schema.read(this.config.snapshot());
+			for (SettingKey<?> setting : this.schema.getSettings()) setting.bind(snapshot);
+			return snapshot;
 		} catch (SettingValueException exception) {
 			throw new IllegalStateException("Validated setting could not be read: "
 					+ exception.getPath(), exception);

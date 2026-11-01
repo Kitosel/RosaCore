@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class SettingsYamlTemplate {
 
@@ -31,6 +33,94 @@ public final class SettingsYamlTemplate {
 		yaml.append("# Generated from the RosaCore settings schema.\n");
 		renderChildren(yaml, root, 0);
 		return yaml.toString();
+	}
+
+	/** Adds schema documentation to a serialized config while retaining its current values and extra keys. */
+	public static String withComments(String yaml, SettingsSchema schema) {
+		Objects.requireNonNull(yaml, "yaml");
+		Objects.requireNonNull(schema, "schema");
+		Map<String, SettingKey<?>> settings = new HashMap<>();
+		for (SettingKey<?> setting : schema.getSettings()) settings.put(setting.getPath(), setting);
+
+		StringBuilder output = new StringBuilder(yaml.length() + settings.size() * 48);
+		List<String> parents = new ArrayList<>();
+		String[] lines = yaml.split("\\r?\\n", -1);
+		for (String line : lines) {
+			Matcher matcher = Pattern.compile("^( *)(.*)$").matcher(line);
+			if (!matcher.matches() || matcher.group(2).isEmpty() || matcher.group(2).startsWith("#")
+					|| matcher.group(2).startsWith("- ")) {
+				output.append(line).append('\n');
+				continue;
+			}
+
+			int indent = matcher.group(1).length();
+			String body = matcher.group(2);
+			int colon = findKeyColon(body);
+			if (colon < 0) {
+				output.append(line).append('\n');
+				continue;
+			}
+			String key = unquote(body.substring(0, colon).trim());
+			int depth = indent / 2;
+			while (parents.size() > depth) parents.remove(parents.size() - 1);
+			String path = String.join(".", parents.isEmpty()
+					? Collections.singletonList(key) : append(parents, key));
+			String value = body.substring(colon + 1).trim();
+			SettingKey<?> setting = settings.get(path);
+			if (setting != null) {
+				appendComments(output, setting, indent);
+			} else if (value.isEmpty()) {
+				while (parents.size() > depth) parents.remove(parents.size() - 1);
+				parents.add(key);
+			}
+			output.append(line).append('\n');
+		}
+		return output.toString();
+	}
+
+	private static List<String> append(List<String> parents, String key) {
+		List<String> path = new ArrayList<>(parents);
+		path.add(key);
+		return path;
+	}
+
+	private static int findKeyColon(String line) {
+		char quote = 0;
+		for (int index = 0; index < line.length(); index++) {
+			char current = line.charAt(index);
+			if (quote != 0) {
+				if (current == quote && (quote != '\'' || index + 1 >= line.length() || line.charAt(index + 1) != '\'')) quote = 0;
+				else if (quote == '\'' && current == '\'' && index + 1 < line.length() && line.charAt(index + 1) == '\'') index++;
+			} else if (current == '\'' || current == '"') {
+				quote = current;
+			} else if (current == ':') {
+				return index;
+			}
+		}
+		return -1;
+	}
+
+	private static String unquote(String key) {
+		if (key.length() >= 2 && key.charAt(0) == '\'' && key.charAt(key.length() - 1) == '\'') {
+			return key.substring(1, key.length() - 1).replace("''", "'");
+		}
+		if (key.length() >= 2 && key.charAt(0) == '"' && key.charAt(key.length() - 1) == '"') {
+			return key.substring(1, key.length() - 1);
+		}
+		return key;
+	}
+
+	private static void appendComments(StringBuilder output, SettingKey<?> setting, int depth) {
+		List<String> lines = new ArrayList<>();
+		lines.addAll(setting.getComments());
+		if (setting.isSensitive()) lines.add("Sensitive value. Do not share it.");
+		lines.addAll(setting.getDescription());
+		for (String comment : lines) {
+			for (String line : comment.replace("\r", "").split("\\n", -1)) {
+				for (int index = 0; index < depth; index++) output.append(' ');
+				output.append(line.isEmpty() ? "#" : "# " + line).append('\n');
+			}
+		}
 	}
 
 	public static void write(Path destination, SettingsSchema schema) throws IOException {
@@ -70,6 +160,10 @@ public final class SettingsYamlTemplate {
 	}
 
 	private static void renderDescription(StringBuilder yaml, SettingKey<?> setting, int depth) {
+		for (String comment : setting.getComments()) {
+			for (String line : comment.replace("\r", "").split("\n", -1))
+				indent(yaml, depth).append(line.isEmpty() ? "#" : "# " + line).append('\n');
+		}
 		if (setting.isSensitive()) {
 			indent(yaml, depth).append("# Sensitive value. Do not share it.\n");
 		}

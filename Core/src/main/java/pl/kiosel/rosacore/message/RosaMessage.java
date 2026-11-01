@@ -97,7 +97,7 @@ public final class RosaMessage {
 		List<String> lines = new ArrayList<>(this.legacyLines());
 		if (!lines.isEmpty() && this.prefix != null && !this.prefix.isEmpty()) {
 			String renderedPrefix = this.colorizer.colorize(this.render(this.prefix));
-			lines.set(0, renderedPrefix + this.prefixSeparator + lines.get(0));
+			lines.replaceAll(line -> renderedPrefix + this.prefixSeparator + line);
 		}
 		return Collections.unmodifiableList(lines);
 	}

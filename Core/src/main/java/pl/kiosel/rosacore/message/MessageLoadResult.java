@@ -1,11 +1,13 @@
 package pl.kiosel.rosacore.message;
 
+import lombok.Getter;
 import pl.kiosel.rosacore.config.ConfigLoadResult;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Getter
 public final class MessageLoadResult {
 
     private final boolean success;
@@ -43,35 +45,4 @@ public final class MessageLoadResult {
                 fallbackResult, localeResult, Collections.emptyList());
     }
 
-    public boolean isSuccess() {
-        return this.success;
-    }
-
-    public String getRequestedLocale() {
-        return this.requestedLocale;
-    }
-
-    public String getActiveLocale() {
-        return this.activeLocale;
-    }
-
-    public String getProblem() {
-        return this.problem;
-    }
-
-    public Throwable getCause() {
-        return this.cause;
-    }
-
-    public ConfigLoadResult getFallbackResult() {
-        return this.fallbackResult;
-    }
-
-    public ConfigLoadResult getLocaleResult() {
-        return this.localeResult;
-    }
-
-    public List<String> getMissingRequiredKeys() {
-        return this.missingRequiredKeys;
-    }
 }

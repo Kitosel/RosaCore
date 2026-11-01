@@ -14,11 +14,14 @@ import java.util.*;
 @Getter
 public final class CraftingRecipeStore {
 
-	private static final String ROOT = "recipes";
-
 	private final RosaConfig config;
+	private final String rootPath;
 
 	public CraftingRecipeStore(RosaConfig config) {
+		this(config, "recipes");
+	}
+
+	public CraftingRecipeStore(RosaConfig config, String rootPath) {
 		this.config = Objects.requireNonNull(config, "config");
 		if (!config.isLoaded()) {
 			ConfigLoadResult result = config.load();
@@ -26,11 +29,15 @@ public final class CraftingRecipeStore {
 				throw loadFailure(config, result);
 			}
 		}
+		this.rootPath = rootPath.trim();
 	}
 
 	public static CraftingRecipeStore open(Plugin plugin, String relativePath) {
-		return new CraftingRecipeStore(new RosaConfig(
-				Objects.requireNonNull(plugin, "plugin"), relativePath));
+		return new CraftingRecipeStore(new RosaConfig(Objects.requireNonNull(plugin, "plugin"), relativePath));
+	}
+
+	public static CraftingRecipeStore open(Plugin plugin, String relativePath, String rootPath) {
+		return new CraftingRecipeStore(new RosaConfig(Objects.requireNonNull(plugin, "plugin"), relativePath), rootPath);
 	}
 
 	public ConfigLoadResult reload() {
@@ -70,11 +77,11 @@ public final class CraftingRecipeStore {
 	}
 
 	public Map<String, CraftingRecipeData> getAll() {
-		ConfigurationSection section = this.config.getConfigurationSection(ROOT);
+		ConfigurationSection section = this.config.getConfigurationSection(rootPath);
 		if (section == null) return Collections.emptyMap();
 		Map<String, CraftingRecipeData> recipes = new LinkedHashMap<>();
 		for (String encodedId : section.getKeys(false)) {
-			String key = this.config.getString(ROOT + "." + encodedId + ".key");
+			String key = this.config.getString(rootPath + "." + encodedId + ".key");
 			if (key == null) {
 				throw new IllegalStateException("Stored crafting recipe has no key: " + encodedId);
 			}
@@ -107,14 +114,14 @@ public final class CraftingRecipeStore {
 		return this.config.save();
 	}
 
-	private static String path(String key) {
+	private String path(String key) {
 		String normalized = CraftingRecipeData.normalizeKey(key);
 		String encoded = Base64.getUrlEncoder().withoutPadding().encodeToString(
 				normalized.getBytes(StandardCharsets.UTF_8));
-		return ROOT + ".r_" + encoded;
+		return rootPath + ".r_" + encoded;
 	}
 
-	private static IllegalStateException loadFailure(RosaConfig config, ConfigLoadResult result) {
+	private IllegalStateException loadFailure(RosaConfig config, ConfigLoadResult result) {
 		String problem = result.getProblems().isEmpty()
 				? "unknown problem"
 				: result.getProblems().get(0).toString();

@@ -6,9 +6,7 @@ import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.MenuType;
-import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_21_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R3.entity.CraftPlayer;
+import net.minecraft.world.level.Level;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import pl.kiosel.rosacore.nms.api.NMSUtils;
@@ -16,24 +14,27 @@ import pl.kiosel.rosacore.nms.api.anvil.AbstractCustomAnvil;
 
 final class NMSCustomAnvil extends AbstractCustomAnvil {
 
+	private final ServerPlayer entity;
+	private final int windowId;
 	private NMSAnvilContainer container;
 
-	NMSCustomAnvil(Player player) {
+	NMSCustomAnvil(Player player, ServerPlayer entity) {
 		super(player);
+		this.entity = entity;
+
+		windowId = entity.nextContainerCounter();
+		container = new NMSAnvilContainer(windowId, entity.getInventory(),
+				ContainerLevelAccess.create((Level) NMSUtils.getWorldHandle(player), new BlockPos(0, 0, 0)), this);
 	}
 
 	@Override
 	protected Inventory openContainer() {
-		ServerPlayer handle = ((CraftPlayer) getPlayer()).getHandle();
-		Location location = getPlayer().getLocation();
-		BlockPos position = new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-		int windowId = handle.nextContainerCounter();
-		container = new NMSAnvilContainer(windowId, handle.getInventory(),
-				ContainerLevelAccess.create(((CraftWorld) getPlayer().getWorld()).getHandle(), position), this);
-		handle.connection.send(new ClientboundOpenScreenPacket(
-				windowId, MenuType.ANVIL, Component.nullToEmpty(NMSUtils.color(getTitle()))));
-		handle.containerMenu = container;
-		handle.initMenu(container);
+		entity.connection.send(new ClientboundOpenScreenPacket(windowId, MenuType.ANVIL, Component.nullToEmpty(NMSUtils.color(getTitle()))));
+
+		entity.containerMenu = container;
+
+		entity.initMenu(container);
+
 		return container.getBukkitView().getTopInventory();
 	}
 

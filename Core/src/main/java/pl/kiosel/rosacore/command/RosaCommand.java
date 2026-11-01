@@ -3,6 +3,7 @@ package pl.kiosel.rosacore.command;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jspecify.annotations.NonNull;
 import pl.kiosel.rosacore.RosaPlugin;
 import pl.kiosel.rosacore.message.MessageCatalog;
 import pl.kiosel.rosacore.utils.ColorUtils;
@@ -83,7 +84,6 @@ public abstract class RosaCommand extends Command implements TabCompleteUtils {
 
 	@Override
 	public final boolean execute(CommandSender sender, String commandLabel, String[] args) {
-		Objects.requireNonNull(sender, "sender");
 		String[] safeArgs = CommandSupport.safeArgs(args);
 		if (!testPermission(sender)) return true;
 		if (isPlayerOnly() && !(sender instanceof Player)) {
@@ -115,8 +115,7 @@ public abstract class RosaCommand extends Command implements TabCompleteUtils {
 	}
 
 	@Override
-	public final List<String> tabComplete(CommandSender sender, String alias, String[] args) {
-		Objects.requireNonNull(sender, "sender");
+	public final @NonNull List<String> tabComplete(CommandSender sender, String alias, String[] args) {
 		String[] safeArgs = CommandSupport.safeArgs(args);
 		if (!testPermissionSilent(sender) || (isPlayerOnly() && !(sender instanceof Player))) {
 			return Collections.emptyList();

@@ -174,4 +174,9 @@ public final class ConfigRegistry {
 			this.dependencies = Collections.unmodifiableSet(new LinkedHashSet<>(dependencies));
 		}
 	}
+
+	public enum ConfigReloadPolicy {
+		CONTINUE_INDEPENDENT,
+		STOP_ON_FAILURE
+	}
 }
