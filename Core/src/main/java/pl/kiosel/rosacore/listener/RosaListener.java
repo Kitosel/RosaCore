@@ -3,13 +3,18 @@ package pl.kiosel.rosacore.listener;
 import lombok.Getter;
 import org.bukkit.Material;
 import org.bukkit.event.Cancellable;
+import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
+import pl.kiosel.rosacore.RosaLogger;
 import pl.kiosel.rosacore.RosaPlugin;
 import pl.kiosel.rosacore.compatibility.ZMaterial;
+import pl.kiosel.rosacore.hook.HookManager;
 import pl.kiosel.rosacore.material.ItemTag;
 import pl.kiosel.rosacore.message.MessageCatalog;
 import pl.kiosel.rosacore.message.RosaMessenger;
+import pl.kiosel.rosacore.scheduler.RosaScheduler;
 
 import java.util.Objects;
 
@@ -60,5 +65,29 @@ public abstract class RosaListener implements Listener {
 
 	public RosaMessenger getMessenger() {
 		return plugin.getMessenger();
+	}
+
+	public RosaScheduler getScheduler() {
+		return plugin.getRosaScheduler();
+	}
+
+	public RosaLogger getLogger() {
+		return plugin.getRosaLogger();
+	}
+
+	public HookManager getHooks() {
+		return plugin.getHookManager();
+	}
+
+	public void callEvent(Event event) {
+		plugin.getServer().getPluginManager().callEvent(event);
+	}
+
+	public void debug(String message) {
+		plugin.getDebug().debug(message);
+	}
+
+	public void debug(String message, Throwable t) {
+		plugin.getDebug().debug(message, t);
 	}
 }

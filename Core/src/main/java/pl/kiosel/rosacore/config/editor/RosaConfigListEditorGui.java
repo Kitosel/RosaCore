@@ -37,7 +37,7 @@ final class RosaConfigListEditorGui extends PagedGui {
 
 		setButton(4, item(ZMaterial.FILLED_MAP, "&e" + path, "&7Right-click an entry to remove it"), event -> {
 		});
-		setButton(0, item(ZMaterial.CHEST, "&aAdd entry", "&7Add a value to this list"), event -> {
+		setButton(getRows(), 5, item(ZMaterial.CHEST, "&aAdd entry", "&7Add a value to this list"), event -> {
 			exit();
 			promptAdd(event.getPlayer());
 		});

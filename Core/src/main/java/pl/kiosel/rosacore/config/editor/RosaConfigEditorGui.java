@@ -32,12 +32,15 @@ public final class RosaConfigEditorGui extends PagedGui {
 
 	private RosaConfigEditorGui(RosaPlugin plugin, RosaConfig config, String sectionPath, PagedGui parent) {
 		super(parent);
+
 		this.plugin = plugin;
 		this.config = Objects.requireNonNull(config, "config");
+
 		this.sectionPath = sectionPath;
 		if (!config.isLoaded())
 			throw new IllegalStateException("Configuration has not been loaded: " + config.getPath());
-		if (!config.isEditable()) throw new IllegalArgumentException("Configuration is read-only: " + config.getPath());
+		if (!config.isEditable())
+			throw new IllegalArgumentException("Configuration is read-only: " + config.getPath());
 
 		setTitle("&1" + config.getFile().getName());
 		setUseHeader(true);
@@ -49,7 +52,7 @@ public final class RosaConfigEditorGui extends PagedGui {
 		String header = sectionPath.isEmpty() ? config.getFile().getName() : sectionPath;
 		setButton(4, item(ZMaterial.FILLED_MAP, "&e" + header, "&7Click a value to edit it"), event -> {
 		});
-		setButton(8, item(ZMaterial.OAK_DOOR, "&cClose", "&7Close the editor"), event -> event.getPlayer().closeInventory());
+		setButton(getRows(), 5, item(ZMaterial.OAK_DOOR, "&cClose", "&7Close the editor"), event -> event.getPlayer().closeInventory());
 		redraw();
 	}
 

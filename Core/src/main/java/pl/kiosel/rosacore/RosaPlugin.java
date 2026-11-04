@@ -1,6 +1,7 @@
 package pl.kiosel.rosacore;
 
 import de.clickism.modrinthupdatechecker.ModrinthUpdateChecker;
+import de.tr7zw.changeme.nbtapi.NBT;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
@@ -87,12 +88,14 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	@Getter
 	private ZColor asciColor = ZColor.DARK_PURPLE;
 
+	//DEV RELATED
 	@Setter
 	@Getter
 	private boolean dev;
 	@Getter
 	private Debug debug;
-	private boolean usingNMS;
+	@Getter
+	protected PluginSettings pluginSettings;
 
 	@Override
 	public final void onLoad() {
@@ -105,13 +108,16 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 					new RuntimeClassLookup(RosaPlugin.class.getClassLoader())
 			);
 			this.debug = new Debug(this);
+			this.pluginSettings = new PluginSettings();
 
 			onPluginLoad();
+
+			dev = pluginSettings.isDev();
 			this.debug.setup();
 
 			hookManager = new HookManager(this);
 
-			if (usingNMS) {
+			if (pluginSettings.isNms()) {
 				this.debug.debug("Server is using NMS");
 				this.nms = NmsResolver.resolve(this,
 						Version.getServerRevisionVersion(),
@@ -140,11 +146,19 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		this.pluginEnableHookStarted = false;
 		this.pluginDisableHookCompleted = false;
 		this.rosaScheduler = RosaSchedulers.create(this, this.serverEnvironment);
-		this.guiManager = new GuiManager(this);
+
+		if (pluginSettings.isGui())
+			this.guiManager = new GuiManager(this);
+
+		if (pluginSettings.isNbt())
+			if (!NBT.preloadApi()) {
+				emergencyStop("NBT-API wasn't initialized properly, disabling the plugin");
+				return;
+			}
 
 		log(" ");
 		log(separator);
-		if (Version.isServerVersionBelow(Version.V1_12_2)) {
+		if (Version.isServerVersionBelow(Version.V1_12_2) || !this.pluginSettings.isAsci()) {
 			log(String.format("&7%s %s", getDescription().getName(), getDescription().getVersion()));
 		} else {
 			log(AsciiArtCreator.create().ascii(getDescription().getName()).buildLines(), this.asciColor);
@@ -153,7 +167,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		log("&7By &d" + getDescription().getAuthors());
 		log("&7Status: &aEnabling");
 		try {
-			if (usingNMS && nms != null) {
+			if (pluginSettings.isNms() && nms != null) {
 				this.tabListManager = new TabListManager(this,
 						nms.getTabListService(),
 						nms.getTabPacketInterceptor(),
@@ -167,6 +181,8 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 			this.scoreboards = new RosaScoreboardManager(this);
 			this.holograms = new RosaHologramManager(this);
 
+			if (pluginSettings.isHooks())
+				hookManager.start();
 
 			this.pluginEnableHookStarted = true;
 			onPluginEnable();
@@ -293,13 +309,12 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 
 	public final void registerCommand(String prefix, RosaCommand command) {
 		if (command == null) return;
-		if (this.registeredCommands.contains(command)) {
+		if (this.registeredCommands.contains(command))
 			throw new IllegalStateException("Command is already registered: /" + command.getName());
-		}
+
 		getDebug().debug("Registering command: /" + command.getName());
-		if (!ReflectionUtils.registerCommand(prefix, command)) {
+		if (!ReflectionUtils.registerCommand(prefix, command))
 			throw new IllegalStateException("Could not register command /" + command.getName());
-		}
 		this.registeredCommands.add(command);
 	}
 
@@ -317,9 +332,9 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		this.emergencyStop = true;
 		debug.debug("Emergency stopped");
 		if (reason != null && reason.length > 0) {
+			getRosaLogger().warning("Emergency stopped reason: " + reason[0]);
 			debug.debug("Emergency stopped reason: " + reason[0]);
 		}
-
 		Bukkit.getPluginManager().disablePlugin(this);
 	}
 
@@ -337,7 +352,6 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	public final ServerEnvironment getServerEnvironment() {
 		if (this.serverEnvironment == null)
 			throw new IllegalStateException("Server environment is unavailable before onLoad or after onDisable");
-
 		return this.serverEnvironment;
 	}
 
@@ -393,7 +407,6 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	public final RosaScheduler getRosaScheduler() {
 		if (this.rosaScheduler == null)
 			throw new IllegalStateException("Scheduler is unavailable before onEnable or after onDisable");
-
 		return this.rosaScheduler;
 	}
 
@@ -402,56 +415,45 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	}
 
 	public final RosaMessenger getMessenger() {
-		if (this.messenger == null) {
+		if (this.messenger == null)
 			throw new IllegalStateException("Messenger is unavailable before onEnable or after onDisable");
-		}
 		return this.messenger;
 	}
 
 	public final RosaBossBarManager getBossBars() {
-		if (this.bossBars == null) {
+		if (this.bossBars == null)
 			throw new IllegalStateException("Boss bars are unavailable before onEnable or after onDisable");
-		}
 		return this.bossBars;
 	}
 
 	public final RosaScoreboardManager getScoreboards() {
-		if (this.scoreboards == null) {
+		if (this.scoreboards == null)
 			throw new IllegalStateException("Scoreboards are unavailable before onEnable or after onDisable");
-		}
 		return this.scoreboards;
 	}
 
 	public final RosaHologramManager getHolograms() {
-		if (this.holograms == null) {
+		if (this.holograms == null)
 			throw new IllegalStateException("Holograms are unavailable before onEnable or after onDisable");
-		}
 		return this.holograms;
 	}
 
 	public final RosaCooldowns getCooldowns() {
-		if (this.cooldowns == null) {
+		if (this.cooldowns == null)
 			throw new IllegalStateException("Cooldowns are unavailable before onEnable or after onDisable");
-		}
 		return this.cooldowns;
 	}
 
 	public final CustomAnvilManager getCustomAnvils() {
-		if (this.customAnvils == null) {
+		if (this.customAnvils == null)
 			throw new IllegalStateException("Custom anvils are unavailable before onEnable or after onDisable");
-		}
 		return this.customAnvils;
 	}
 
 	public final NMS getNMS() {
-		if (this.nms == null) {
+		if (this.nms == null)
 			throw new IllegalStateException("NMS is unavailable before onLoad or after onDisable");
-		}
 		return this.nms;
-	}
-
-	public final void useNMS(boolean nms) {
-		this.usingNMS = nms;
 	}
 
 	public final GuiManager getGuiManager() {
@@ -461,16 +463,24 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	}
 
 	public final void openSettingsEditor(Player player, RosaSettings settings) {
+		if (!pluginSettings.isGui())
+			player.sendMessage("The plugin has disabled the GUI");
 		new SettingsEditorGui(this, settings).show(getGuiManager(), player);
 	}
 
 	public final void openConfigEditor(Player player) {
+		if (!pluginSettings.isGui())
+			player.sendMessage("The plugin has disabled the GUI");
 		new RosaConfigListGui(this).show(getGuiManager(), player);
 	}
 
 	public final void openConfigEditor(Player player, RosaConfig config) {
 		Objects.requireNonNull(config, "config");
-		if (!config.isEditable()) throw new IllegalArgumentException("Configuration is read-only: " + config.getPath());
+		if (!config.isEditable())
+			throw new IllegalArgumentException("Configuration is read-only: " + config.getPath());
+		if (!pluginSettings.isGui())
+			player.sendMessage("The plugin has disabled the GUI");
+
 		new RosaConfigEditorGui(this, config).show(getGuiManager(), player);
 	}
 
@@ -499,6 +509,8 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 			getRosaLogger().info("Config is not loaded: " + config.getPath());
 			return;
 		}
+		if (this.managedConfigs.contains(config)) return;
+
 		this.managedConfigs.add(config);
 		debug.debug("Added managed config: " + config.getPath());
 	}
@@ -738,4 +750,43 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		return "RosaCore";
 	}
 
+	protected class PluginSettings {
+
+		@Getter private boolean dev = false;
+		@Getter private boolean nms = false;
+		@Getter private boolean hooks = false;
+		@Getter private boolean gui = false;
+		@Getter private boolean nbt = false;
+		@Getter private boolean asci = true;
+
+		public PluginSettings usingNms() {
+			this.nms = true;
+			return this;
+		}
+
+		public PluginSettings usingHooks() {
+			this.hooks = true;
+			return this;
+		}
+
+		public PluginSettings useGui() {
+			this.gui = true;
+			return this;
+		}
+
+		public PluginSettings useNBT() {
+			this.nbt = true;
+			return this;
+		}
+
+		public PluginSettings setAsci(boolean asci) {
+			this.asci = asci;
+			return this;
+		}
+
+		public PluginSettings setDev(boolean dev) {
+			this.dev = dev;
+			return this;
+		}
+	}
 }
