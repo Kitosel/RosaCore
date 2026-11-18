@@ -21,14 +21,12 @@ import pl.kiosel.rosacore.config.RosaConfig;
 import pl.kiosel.rosacore.config.editor.RosaConfigEditorGui;
 import pl.kiosel.rosacore.config.editor.RosaConfigListGui;
 import pl.kiosel.rosacore.config.setting.RosaSettings;
-import pl.kiosel.rosacore.config.setting.SettingsEditorGui;
+import pl.kiosel.rosacore.config.editor.SettingsEditorGui;
 import pl.kiosel.rosacore.config.setting.SettingsSchema;
-import pl.kiosel.rosacore.cooldown.RosaCooldowns;
 import pl.kiosel.rosacore.database.DatabaseManager;
 import pl.kiosel.rosacore.database.DatabaseMigration;
 import pl.kiosel.rosacore.database.DatabaseSettings;
 import pl.kiosel.rosacore.gui.GuiManager;
-import pl.kiosel.rosacore.hologram.RosaHologramManager;
 import pl.kiosel.rosacore.hook.HookManager;
 import pl.kiosel.rosacore.input.ChatInput;
 import pl.kiosel.rosacore.input.Debug;
@@ -36,11 +34,9 @@ import pl.kiosel.rosacore.listener.RosaListener;
 import pl.kiosel.rosacore.message.*;
 import pl.kiosel.rosacore.nms.CustomAnvilManager;
 import pl.kiosel.rosacore.nms.NmsResolver;
-import pl.kiosel.rosacore.nms.TabListManager;
 import pl.kiosel.rosacore.nms.api.NMS;
 import pl.kiosel.rosacore.scheduler.RosaScheduler;
 import pl.kiosel.rosacore.scheduler.RosaSchedulers;
-import pl.kiosel.rosacore.scoreboard.RosaScoreboardManager;
 import pl.kiosel.rosacore.utils.ColorUtils;
 import pl.kiosel.rosacore.utils.ReflectionUtils;
 import pl.kiosel.rosacore.version.MinecraftVersion;
@@ -63,16 +59,11 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	private HookManager hookManager;
 	private MessageCatalog locale;
 	private RosaMessenger messenger;
-	private RosaBossBarManager bossBars;
-	private RosaScoreboardManager scoreboards;
-	private RosaHologramManager holograms;
-	private RosaCooldowns cooldowns;
 
 	@Getter private String newPluginVersion;
 
 	//NMS RELATED
 	private CustomAnvilManager customAnvils;
-	private TabListManager tabListManager;
 	private NMS nms;
 
 	private CommandSender console;
@@ -168,18 +159,9 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		log("&7Status: &aEnabling");
 		try {
 			if (pluginSettings.isNms() && nms != null) {
-				this.tabListManager = new TabListManager(this,
-						nms.getTabListService(),
-						nms.getTabPacketInterceptor(),
-						nms.getServerStatusInterceptor());
 				this.customAnvils = new CustomAnvilManager(this);
 			}
-
-			this.cooldowns = new RosaCooldowns(this.rosaScheduler);
 			this.messenger = new RosaMessenger(this, getMinecraftVersion());
-			this.bossBars = new RosaBossBarManager(this.messenger);
-			this.scoreboards = new RosaScoreboardManager(this);
-			this.holograms = new RosaHologramManager(this);
 
 			if (pluginSettings.isHooks())
 				hookManager.start();
@@ -249,13 +231,12 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		}
 		this.hookManager.close();
 
-		closeHolograms();
-		closeScoreboards();
-		closeBossBars();
 		closeMessenger();
-		closeCooldowns();
-		closeCustomAnvils();
-		closeTabLists();
+
+		if (this.customAnvils != null) {
+			this.customAnvils.close();
+			this.customAnvils = null;
+		}
 
 		if (this.rosaScheduler != null)
 			this.rosaScheduler.cancelAll();
@@ -374,6 +355,11 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		}
 	}
 
+	public void runShutdownStep(String description, boolean condition, Runnable action) {
+		if (!condition) return;
+		runShutdownStep(description, action);
+	}
+
 	private void runPluginDisableHook() {
 		if (!this.pluginEnableHookStarted || this.pluginDisableHookCompleted) return;
 		this.pluginDisableHookCompleted = true;
@@ -418,30 +404,6 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		if (this.messenger == null)
 			throw new IllegalStateException("Messenger is unavailable before onEnable or after onDisable");
 		return this.messenger;
-	}
-
-	public final RosaBossBarManager getBossBars() {
-		if (this.bossBars == null)
-			throw new IllegalStateException("Boss bars are unavailable before onEnable or after onDisable");
-		return this.bossBars;
-	}
-
-	public final RosaScoreboardManager getScoreboards() {
-		if (this.scoreboards == null)
-			throw new IllegalStateException("Scoreboards are unavailable before onEnable or after onDisable");
-		return this.scoreboards;
-	}
-
-	public final RosaHologramManager getHolograms() {
-		if (this.holograms == null)
-			throw new IllegalStateException("Holograms are unavailable before onEnable or after onDisable");
-		return this.holograms;
-	}
-
-	public final RosaCooldowns getCooldowns() {
-		if (this.cooldowns == null)
-			throw new IllegalStateException("Cooldowns are unavailable before onEnable or after onDisable");
-		return this.cooldowns;
 	}
 
 	public final CustomAnvilManager getCustomAnvils() {
@@ -518,10 +480,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	protected final RosaSettings loadSettings(RosaConfig config, SettingsSchema schema) {
 		Objects.requireNonNull(config, "config");
 		Objects.requireNonNull(schema, "settings schema");
-		RosaSettings settings = RosaSettings.create(
-				config,
-				schema
-		);
+		RosaSettings settings = RosaSettings.create(config, schema);
 		ConfigLoadResult result = settings.load();
 
 		if (!result.isSuccess()) {
@@ -534,17 +493,14 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		} else if (!this.managedConfigs.contains(settings)) {
 			this.managedConfigs.add(settings);
 		}
-		debug.debug("Loaded settings: " + config);
+		debug.debug("Loaded settings: " + settings.getPath().getFileName());
 		return settings;
 	}
 
 	protected final RosaSettings loadSettings(String relativePath, SettingsSchema schema) {
 		Objects.requireNonNull(relativePath, "file");
 		Objects.requireNonNull(schema, "settings schema");
-		RosaSettings settings = RosaSettings.create(
-				RosaConfig.builder(this, relativePath),
-				schema
-		);
+		RosaSettings settings = RosaSettings.create(RosaConfig.builder(this, relativePath), schema);
 		ConfigLoadResult result = settings.load();
 
 		if (!result.isSuccess()) {
@@ -649,43 +605,6 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		this.messenger = null;
 	}
 
-	private void closeBossBars() {
-		if (this.bossBars == null) return;
-		runShutdownStep("closing boss bars", this.bossBars::close);
-		this.bossBars = null;
-	}
-
-	private void closeScoreboards() {
-		if (this.scoreboards == null) return;
-		runShutdownStep("closing scoreboards", this.scoreboards::close);
-		this.scoreboards = null;
-	}
-
-	private void closeHolograms() {
-		if (this.holograms == null) return;
-		runShutdownStep("closing holograms", this.holograms::close);
-		this.holograms = null;
-	}
-
-	private void closeCooldowns() {
-		if (this.cooldowns == null) return;
-		runShutdownStep("closing cooldown manager", this.cooldowns::close);
-		this.cooldowns = null;
-	}
-
-	private void closeCustomAnvils() {
-		if (this.customAnvils != null) {
-			this.customAnvils.close();
-			this.customAnvils = null;
-		}
-	}
-
-	private void closeTabLists() {
-		if (this.tabListManager == null) return;
-		runShutdownStep("closing tab lists", this.tabListManager::close);
-		this.tabListManager = null;
-	}
-
 	private static IllegalStateException configFailure(ReloadableConfig config, ConfigLoadResult result) {
 		String problem = result.getProblems().isEmpty()
 				? "unknown problem"
@@ -722,7 +641,12 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 	}
 
 	public void checkUpdates(String projectId) {
-		getRosaLogger().info("Checking for updates...");
+		if (isDev()) {
+			getDebug().debug("No checking for update because dev mode is active");
+			return;
+		} else {
+			getRosaLogger().info("Checking for updates...");
+		}
 
 		String mcVersion = Bukkit.getBukkitVersion().split("-")[0];
 		String platform = this.getServerEnvironment().getPlatform().name().toLowerCase(Locale.ROOT);
@@ -750,7 +674,7 @@ public abstract class RosaPlugin extends JavaPlugin implements RosaApi, Listener
 		return "RosaCore";
 	}
 
-	protected class PluginSettings {
+	protected static class PluginSettings {
 
 		@Getter private boolean dev = false;
 		@Getter private boolean nms = false;

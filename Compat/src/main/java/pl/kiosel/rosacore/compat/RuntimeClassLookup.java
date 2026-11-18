@@ -1,13 +1,11 @@
 package pl.kiosel.rosacore.compat;
 
-import java.util.Objects;
-
 public final class RuntimeClassLookup implements ClassLookup {
 
 	private final ClassLoader classLoader;
 
 	public RuntimeClassLookup(ClassLoader classLoader) {
-		this.classLoader = Objects.requireNonNull(classLoader, "classLoader");
+		this.classLoader = classLoader;
 	}
 
 	@Override

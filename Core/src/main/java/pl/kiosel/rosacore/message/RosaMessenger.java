@@ -44,8 +44,7 @@ public final class RosaMessenger implements AutoCloseable {
 	public RosaMessenger(RosaPlugin plugin, MinecraftVersion minecraftVersion) {
 		this.audiences = BukkitAudiences.create(plugin);
 		this.serializer = LegacyComponentSerializer.legacySection();
-		this.colorizer = LegacyColorizer.forVersion(
-				Objects.requireNonNull(minecraftVersion, "minecraftVersion"));
+		this.colorizer = LegacyColorizer.forVersion(minecraftVersion);
 		this.scheduler = plugin.getRosaScheduler();
 	}
 

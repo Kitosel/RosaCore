@@ -124,27 +124,27 @@ public final class ReflectiveTabListService implements TabListService {
 
 		@Override
 		public TabListCell getCell(int slot) {
-			validateSlot(slot);
+			TabList.validateSlot(slot);
 			return cells[slot];
 		}
 
 		@Override
 		public TabList setCell(int slot, TabListCell cell) {
-			validateSlot(slot);
+			TabList.validateSlot(slot);
 			cells[slot] = cell;
 			return this;
 		}
 
 		@Override
 		public TabList clearCell(int slot) {
-			validateSlot(slot);
+			TabList.validateSlot(slot);
 			cells[slot] = null;
 			return this;
 		}
 
 		@Override
 		public TabList clearCells() {
-			for (int slot = 0; slot < cells.length; slot++) cells[slot] = null;
+			Arrays.fill(cells, null);
 			return this;
 		}
 
@@ -194,9 +194,9 @@ public final class ReflectiveTabListService implements TabListService {
 			for (int slot = 0; slot < activeCellCount; slot++) {
 				TabListCell cell = cells[slot];
 				if (cell != null && !cell.isListed()) continue;
-				UUID profileId = profileId(slot, cell);
+				UUID profileId = TabList.profileId(slot, cell);
 				nextProfileIds.add(profileId);
-				entries.add(protocol.createEntry(profileId, profileName(slot, cell), slot, cell));
+				entries.add(protocol.createEntry(profileId, TabList.profileName(slot, cell), slot, cell));
 			}
 			if (renderedProfileIds == null) {
 				hideRealProfiles();
@@ -265,24 +265,6 @@ public final class ReflectiveTabListService implements TabListService {
 		private boolean canUseRealPlayer(Player realPlayer) {
 			return realPlayer != null && player.isOnline() && realPlayer.isOnline()
 					&& player.canSee(realPlayer);
-		}
-
-		private static UUID profileId(int slot, TabListCell cell) {
-			if (cell != null && cell.getUniqueId() != null) return cell.getUniqueId();
-			return UUID.nameUUIDFromBytes(("rosacore:tablist:" + slot).getBytes(StandardCharsets.UTF_8));
-		}
-
-		private static String profileName(int slot, TabListCell cell) {
-			if (cell != null && cell.getProfileName() != null && !cell.getProfileName().isEmpty()) {
-				return cell.getProfileName();
-			}
-			return String.format("rosa%012d", slot);
-		}
-
-		private static void validateSlot(int slot) {
-			if (slot < 0 || slot >= DEFAULT_CELL_COUNT) {
-				throw new IllegalArgumentException("Tab-list slot must be between 0 and 79: " + slot);
-			}
 		}
 	}
 
@@ -441,7 +423,7 @@ public final class ReflectiveTabListService implements TabListService {
 
 		private void sendPacket(Player player, Object packet) {
 			try {
-				Object handle = player.getClass().getMethod("getHandle").invoke(player);
+				Object handle = NMSUtils.getPlayerHandle(player);
 				Object connection = findConnection(handle);
 				Method sendMethod = findSendMethod(connection.getClass(), packet.getClass());
 				sendMethod.invoke(connection, RosaPacketMarker.mark(packet));
@@ -489,7 +471,7 @@ public final class ReflectiveTabListService implements TabListService {
 		private static void addActionIfPresent(EnumSet target, Class<?> actionClass, String name) {
 			for (Object constant : actionClass.getEnumConstants()) {
 				if (name.equals(((Enum<?>) constant).name())) {
-					target.add((Enum) constant);
+					target.add(constant);
 					return;
 				}
 			}

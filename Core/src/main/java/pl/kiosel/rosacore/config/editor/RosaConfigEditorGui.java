@@ -4,7 +4,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import pl.kiosel.rosacore.RosaPlugin;
+import pl.kiosel.rosacore.compatibility.RosaSound;
 import pl.kiosel.rosacore.compatibility.ZMaterial;
+import pl.kiosel.rosacore.compatibility.ZSound;
 import pl.kiosel.rosacore.config.ConfigSaveResult;
 import pl.kiosel.rosacore.config.RosaConfig;
 import pl.kiosel.rosacore.gui.PagedGui;
@@ -52,7 +54,7 @@ public final class RosaConfigEditorGui extends PagedGui {
 		String header = sectionPath.isEmpty() ? config.getFile().getName() : sectionPath;
 		setButton(4, item(ZMaterial.FILLED_MAP, "&e" + header, "&7Click a value to edit it"), event -> {
 		});
-		setButton(getRows(), 5, item(ZMaterial.OAK_DOOR, "&cClose", "&7Close the editor"), event -> event.getPlayer().closeInventory());
+		setButton(getRows(), 5, item(ZMaterial.OAK_DOOR, "&cClose", "&7Close the editor"), event -> forceExit());
 		redraw();
 	}
 
@@ -80,7 +82,9 @@ public final class RosaConfigEditorGui extends PagedGui {
 						event -> {
 							if (material.isPresent() && material.get().getMaterial().isPresent()) {
 								event.getManager().showGUI(event.getPlayer(), new RosaMaterialPickerGui(this, path));
-							} else promptValue(event.getPlayer(), path, value);
+							} else {
+								promptValue(event.getPlayer(), path, value);
+							}
 						});
 			} else if (value instanceof List<?>) {
 				setButton(slot++, valueItem(ZMaterial.WRITABLE_BOOK, key, path,
@@ -114,15 +118,21 @@ public final class RosaConfigEditorGui extends PagedGui {
 	}
 
 	private void promptValue(Player player, String path, Object oldValue) {
+		forceExit();
 		player.sendMessage(ChatColor.YELLOW + "Enter a new value for " + path + ". Use /cancel to stop.");
 		ChatInput.showPrompt(plugin, player, response -> plugin.getRosaScheduler().runGlobal(() -> {
 			try {
 				updateValue(player, path, parseValue(oldValue, response.getMessage().trim()));
+				playSound(player, new RosaSound.SoundHolder(ZSound.ENTITY_EXPERIENCE_ORB_PICKUP, 2f, 2f));
 			} catch (IllegalArgumentException exception) {
 				player.sendMessage(ChatColor.RED + "Invalid value: " + exception.getMessage());
 				plugin.getGuiManager().openGUI(player, this);
 			}
-		})).onCancel(() -> plugin.getRosaScheduler().runGlobal(() -> plugin.getGuiManager().openGUI(player, this)));
+		})).onCancel(() -> reopen(player)).onClose(() -> reopen(player));
+	}
+
+	private void reopen(Player player) {
+		plugin.getRosaScheduler().runGlobal(() -> plugin.getGuiManager().openGUI(player, this));
 	}
 
 	private static Object parseValue(Object previous, String input) {

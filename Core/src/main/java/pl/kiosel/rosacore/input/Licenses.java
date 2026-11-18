@@ -57,7 +57,8 @@ public class Licenses {
 			log(1, "Disabling plugin!");
 			log(0, "[]==========[License-System]==========[]");
 
-			Bukkit.getScheduler().runTask(plugin, () -> {
+			plugin.getRosaScheduler().runGlobal(() -> {
+				plugin.getRosaScheduler().cancelAll();
 				Bukkit.getScheduler().cancelTasks(plugin);
 				Bukkit.getPluginManager().disablePlugin(plugin);
 			});

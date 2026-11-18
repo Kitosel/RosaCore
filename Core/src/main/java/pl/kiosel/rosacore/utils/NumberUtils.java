@@ -6,6 +6,9 @@ import java.util.Locale;
 
 public class NumberUtils {
 
+	private NumberUtils() {
+	}
+
 	public static boolean isInt(String number) {
 		try {
 			Integer.parseInt(number);

@@ -3,6 +3,7 @@ package pl.kiosel.rosacore.nms.api.tablist;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public interface TabList {
@@ -105,5 +106,23 @@ public interface TabList {
 			throw new IndexOutOfBoundsException("Tab-list column must be between 0 and 3: " + column);
 		}
 		return column * ROW_COUNT + row;
+	}
+
+	static UUID profileId(int slot, TabListCell cell) {
+		if (cell != null && cell.getUniqueId() != null) return cell.getUniqueId();
+		return UUID.nameUUIDFromBytes(("rosacore:tablist:" + slot).getBytes(StandardCharsets.UTF_8));
+	}
+
+	static String profileName(int slot, TabListCell cell) {
+		if (cell != null && cell.getProfileName() != null && !cell.getProfileName().isEmpty()) {
+			return cell.getProfileName();
+		}
+		return String.format("rosa%012d", slot);
+	}
+
+	static void validateSlot(int slot) {
+		if (slot < 0 || slot >= DEFAULT_CELL_COUNT) {
+			throw new IllegalArgumentException("Tab-list slot must be between 0 and 79: " + slot);
+		}
 	}
 }

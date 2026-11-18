@@ -38,10 +38,10 @@ public abstract class RosaScoreboard implements AutoCloseable {
 	private boolean closed;
 	private ScoreboardNumberFormat numberFormat = ScoreboardNumberFormat.BLANK;
 
-	protected RosaScoreboard(RosaPlugin plugin, Player player) {
+	protected RosaScoreboard(RosaPlugin plugin, Player player, RosaScoreboardManager owner) {
 		this.plugin = Objects.requireNonNull(plugin, "plugin");
 		this.player = Objects.requireNonNull(player, "player");
-		this.owner = plugin.getScoreboards();
+		this.owner = owner;
 		this.colorizer = LegacyColorizer.forVersion(plugin.getMinecraftVersion());
 	}
 

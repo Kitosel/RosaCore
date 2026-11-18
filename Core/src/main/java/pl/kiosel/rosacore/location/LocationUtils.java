@@ -30,6 +30,14 @@ public final class LocationUtils {
 	public static boolean isLocationMatching(Location first, Location second) {
 		Objects.requireNonNull(first, "first");
 		Objects.requireNonNull(second, "second");
+
+		if (first.getWorld() == null)
+			return false;
+		if (second.getWorld() == null)
+			return false;
+		if (!first.getWorld().equals(second.getWorld()))
+			return false;
+
 		return first.getBlockX() == second.getBlockX()
 				&& first.getBlockY() == second.getBlockY()
 				&& first.getBlockZ() == second.getBlockZ();

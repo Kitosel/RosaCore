@@ -30,7 +30,7 @@ public final class RosaConfigListGui extends PagedGui {
 		setButton(4, ItemUtils.create(ZMaterial.BOOK, "&eEditable configurations", "&7Select a configuration to edit"), event -> {
 		});
 		setButton(getRows(), 8, ItemUtils.create(ZMaterial.OAK_DOOR, "&cClose", "&7Close the editor"),
-				event -> event.getPlayer().closeInventory());
+				event -> close());
 
 		if (editableConfigs.isEmpty()) {
 			setItem(22, ItemUtils.create(ZMaterial.RED_DYE, "&cNo configuration file found"));

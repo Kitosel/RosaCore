@@ -27,17 +27,6 @@ public class NMSUtils {
 		}
 	}
 
-	public static Object getWorldHandle(Player player) {
-		try {
-			Object craftWorld = player.getWorld();
-			Class<?> craftWorldClass = craftWorld.getClass();
-			Method getHandleMethod = craftWorldClass.getMethod("getHandle");
-			return getHandleMethod.invoke(craftWorld);
-		} catch (Exception e) {
-			throw new RuntimeException("Can not find World handle for player " + player.getName(), e);
-		}
-	}
-
 	public static Field findField(Class<?> type, String name) throws NoSuchFieldException {
 		Class<?> current = type;
 		while (current != null) {

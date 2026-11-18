@@ -2,6 +2,7 @@ package pl.kiosel.rosacore.gui;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -533,9 +534,14 @@ public abstract class Gui {
 		playSound(player, resolveClickSound(slot, clickType));
 	}
 
-	private static void playSound(Player player, RosaSound.SoundHolder sound) {
-		if (sound == null) return;
+	public void playSound(Player player, RosaSound.SoundHolder sound) {
+		if (sound == null || sound.getSound() == null) return;
 		sound.getSound().play(player, sound.getVolume(), sound.getPitch());
+	}
+
+	public void playSound(Player player, ZSound sound) {
+		if (sound == null || !sound.getSound().isPresent()) return;
+		RosaSound.from(sound.getSound().orElse(Sound.UI_BUTTON_CLICK)).play(player, 1f, 1f);
 	}
 
 	private void playClickSoundIfNeeded(Player player, int slot, ClickType clickType) {

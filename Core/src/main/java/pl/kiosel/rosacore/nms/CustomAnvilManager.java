@@ -24,13 +24,12 @@ public final class CustomAnvilManager implements Listener, AutoCloseable {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 	}
 
-	public CustomAnvil open(CustomAnvil anvil) {
+	public void open(CustomAnvil anvil) {
 		if (anvil == null) throw new NullPointerException("anvil");
 		Player player = anvil.getPlayer();
 		close(player);
 		anvil.open();
 		active.put(player.getUniqueId(), anvil);
-		return anvil;
 	}
 
 	public void close(Player player) {
@@ -86,12 +85,12 @@ public final class CustomAnvilManager implements Listener, AutoCloseable {
 		HandlerList.unregisterAll(this);
 	}
 
-	private static boolean isAnvilInventory(CustomAnvil anvil, Inventory inventory) {
+	private boolean isAnvilInventory(CustomAnvil anvil, Inventory inventory) {
 		Inventory anvilInventory = anvil.getInventory();
 		return anvilInventory != null && anvilInventory.equals(inventory);
 	}
 
-	private static void discardVirtualItems(CustomAnvil anvil) {
+	private void discardVirtualItems(CustomAnvil anvil) {
 		for (int slot = CustomAnvil.LEFT_INPUT_SLOT; slot <= CustomAnvil.RESULT_SLOT; slot++) {
 			anvil.setItem(slot, null);
 		}

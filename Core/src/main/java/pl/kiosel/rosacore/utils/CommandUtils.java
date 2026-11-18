@@ -17,7 +17,8 @@ public class CommandUtils {
 	private CommandUtils() {
 	}
 
-	public static void help(List<RosaSubCommand> subCommands, CommandSender sender, String label, String c1, String c2, String c3, String nosubcommand) {
+	public static void help(List<RosaSubCommand> subCommands, CommandSender sender, String label,
+							String c1, String c2, String c3, String nosubcommand) {
 		String options = subCommands.stream()
 				.filter(sub -> hasPermission(sender, sub.getPermission()))
 				.map(RosaSubCommand::getName)

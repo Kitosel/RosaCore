@@ -4,6 +4,9 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/*
+  The main Logger plugin assigned to the core and the plugin that inherits from the core
+*/
 public final class RosaLogger {
 
 	private static final RosaLogger INSTANCE = new RosaLogger();

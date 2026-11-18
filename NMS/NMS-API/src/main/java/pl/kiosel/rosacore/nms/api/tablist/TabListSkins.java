@@ -1,6 +1,7 @@
 package pl.kiosel.rosacore.nms.api.tablist;
 
 import org.bukkit.entity.Player;
+import pl.kiosel.rosacore.nms.api.NMSUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -15,7 +16,7 @@ public final class TabListSkins {
 	public static TabListSkin fromPlayer(Player player) {
 		if (player == null) return null;
 		try {
-			Object handle = player.getClass().getMethod("getHandle").invoke(player);
+			Object handle = NMSUtils.getPlayerHandle(player);
 			Object profile = findProfile(handle);
 			if (profile == null) return null;
 

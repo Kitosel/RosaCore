@@ -141,7 +141,7 @@ public class ConfirmationGui extends Gui {
 	}
 
 	public ConfirmationGui confirmItem(ItemStack item) {
-		this.confirmItem = cloneOrNull(item);
+		this.confirmItem = item;
 		return this;
 	}
 
@@ -155,7 +155,7 @@ public class ConfirmationGui extends Gui {
 	}
 
 	public ConfirmationGui cancelItem(ItemStack item) {
-		this.cancelItem = cloneOrNull(item);
+		this.cancelItem = item;
 		return this;
 	}
 
@@ -169,7 +169,7 @@ public class ConfirmationGui extends Gui {
 	}
 
 	public ConfirmationGui informationItem(ItemStack item) {
-		this.informationItem = cloneOrNull(item);
+		this.informationItem = item;
 		return this;
 	}
 
@@ -183,7 +183,7 @@ public class ConfirmationGui extends Gui {
 	}
 
 	public ConfirmationGui emptyItem(ItemStack item) {
-		this.emptyItem = cloneOrNull(item);
+		this.emptyItem = item;
 		return this;
 	}
 
@@ -253,9 +253,10 @@ public class ConfirmationGui extends Gui {
 		int cancelSlot = slotIndex(this.cancelRow, this.cancelColumn);
 		int informationSlot = slotIndex(this.infoRow, this.infoColumn);
 		Set<Integer> visibleSlots = new HashSet<>();
-		if (this.showConfirm && !visibleSlots.add(confirmSlot)
-				|| this.showCancel && !visibleSlots.add(cancelSlot)
-				|| this.showInformation && !visibleSlots.add(informationSlot))
+		if (this.showConfirm) {
+			visibleSlots.add(confirmSlot);
+		}
+		if (this.showCancel && !visibleSlots.add(cancelSlot) || this.showInformation && !visibleSlots.add(informationSlot))
 			throw new IllegalStateException("Visible confirmation GUI items must use different slots");
 
 		clearManagedSlots();
@@ -336,7 +337,7 @@ public class ConfirmationGui extends Gui {
 		this.managedSlots.clear();
 	}
 
-	private void playSound(Player player, RosaSound.SoundHolder sound) {
+	public void playSound(Player player, RosaSound.SoundHolder sound) {
 		if (!this.playSound || sound == null || sound.getSound() == null) return;
 		sound.getSound().play(player, sound.getVolume(), sound.getPitch());
 	}
@@ -350,9 +351,5 @@ public class ConfirmationGui extends Gui {
 			throw new IllegalArgumentException("slot must be between 0 and " + (getSize() - 1));
 		}
 		return new int[]{slot / 9 + 1, slot % 9 + 1};
-	}
-
-	private static ItemStack cloneOrNull(ItemStack item) {
-		return item == null ? null : item.clone();
 	}
 }

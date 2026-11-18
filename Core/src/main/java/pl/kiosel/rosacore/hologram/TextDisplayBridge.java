@@ -23,15 +23,15 @@ final class TextDisplayBridge {
 	private final Method setLineWidth;
 
 	TextDisplayBridge(ClassLoader classLoader) {
-		Class<?> foundTextDisplay = null;
-		EntityType foundType = null;
-		Object foundCenter = null;
-		Method foundSetText = null;
-		Method foundSetBillboard = null;
-		Method foundSetShadowed = null;
-		Method foundSetSeeThrough = null;
-		Method foundSetDefaultBackground = null;
-		Method foundSetLineWidth = null;
+		Class<?> foundTextDisplay;
+		EntityType foundType;
+		Object foundCenter;
+		Method foundSetText;
+		Method foundSetBillboard;
+		Method foundSetShadowed;
+		Method foundSetSeeThrough;
+		Method foundSetDefaultBackground;
+		Method foundSetLineWidth;
 		try {
 			foundTextDisplay = Class.forName(TEXT_DISPLAY_CLASS, false, classLoader);
 			Class<?> billboardClass = Class.forName(BILLBOARD_CLASS, false, classLoader);
@@ -101,7 +101,7 @@ final class TextDisplayBridge {
 		invoke(this.setLineWidth, entity, 2048);
 	}
 
-	private static void invoke(Method method, Object target, Object... arguments) {
+	private void invoke(Method method, Object target, Object... arguments) {
 		try {
 			method.invoke(target, arguments);
 		} catch (IllegalAccessException exception) {
@@ -115,7 +115,7 @@ final class TextDisplayBridge {
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	private static Object enumValue(Class<?> enumClass, String name) {
+	private Object enumValue(Class<?> enumClass, String name) {
 		return Enum.valueOf((Class<? extends Enum>) enumClass.asSubclass(Enum.class), name);
 	}
 }

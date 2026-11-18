@@ -7,11 +7,9 @@ import java.lang.reflect.Method;
 
 final class PaperScoreboardFeatures {
 
-	private static final String NUMBER_FORMAT_CLASS =
-			"io.papermc.paper.scoreboard.numbers.NumberFormat";
+	private static final String NUMBER_FORMAT_CLASS = "io.papermc.paper.scoreboard.numbers.NumberFormat";
 	private static final String COMPONENT_CLASS = adventureClass("adventure.text.Component");
-	private static final String LEGACY_SERIALIZER_CLASS =
-			adventureClass("adventure.text.serializer.legacy.LegacyComponentSerializer");
+	private static final String LEGACY_SERIALIZER_CLASS = adventureClass("adventure.text.serializer.legacy.LegacyComponentSerializer");
 
 	private final Class<?> numberFormatClass;
 	private final Class<?> componentClass;
@@ -21,12 +19,12 @@ final class PaperScoreboardFeatures {
 	private final Method deserialize;
 
 	PaperScoreboardFeatures(ClassLoader classLoader) {
-		Class<?> foundNumberFormat = null;
-		Class<?> foundComponent = null;
-		Method foundObjectiveNumberFormat = null;
-		Method foundScoreCustomName = null;
-		Method foundLegacySection = null;
-		Method foundDeserialize = null;
+		Class<?> foundNumberFormat;
+		Class<?> foundComponent;
+		Method foundObjectiveNumberFormat;
+		Method foundScoreCustomName;
+		Method foundLegacySection;
+		Method foundDeserialize;
 		try {
 			foundNumberFormat = Class.forName(NUMBER_FORMAT_CLASS, false, classLoader);
 			foundObjectiveNumberFormat = Objective.class.getMethod("numberFormat", foundNumberFormat);

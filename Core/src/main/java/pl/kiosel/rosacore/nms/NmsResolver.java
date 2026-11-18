@@ -3,7 +3,6 @@ package pl.kiosel.rosacore.nms;
 import pl.kiosel.rosacore.RosaPlugin;
 import pl.kiosel.rosacore.nms.api.NMS;
 
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 public final class NmsResolver {
@@ -14,7 +13,6 @@ public final class NmsResolver {
 	}
 
 	public static NMS resolve(RosaPlugin plugin, String revision, ClassLoader classLoader) {
-		Objects.requireNonNull(classLoader, "classLoader");
 		String className = implementationClassName(revision);
 
 		plugin.getDebug().debug("Server Revision " + revision);
@@ -25,13 +23,11 @@ public final class NmsResolver {
 			Class<? extends NMS> implementationType = rawType.asSubclass(NMS.class);
 			return implementationType.getDeclaredConstructor().newInstance();
 		} catch (ClassNotFoundException exception) {
-			throw new UnsupportedOperationException(
-					"RosaCore does not contain an NMS implementation for " + revision, exception);
+			throw new UnsupportedOperationException("RosaCore does not contain an NMS implementation for " + revision, exception);
 		} catch (ReflectiveOperationException | ClassCastException exception) {
 			throw new IllegalStateException("Could not create NMS implementation " + className, exception);
 		} catch (LinkageError error) {
-			throw new IllegalStateException(
-					"NMS implementation " + className + " is not compatible with this server", error);
+			throw new IllegalStateException("NMS implementation " + className + " is not compatible with this server", error);
 		}
 	}
 

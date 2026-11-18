@@ -132,16 +132,10 @@ public final class RosaParticle {
 		return true;
 	}
 
-	/**
-	 * Sends the particle only to one player.
-	 */
 	public boolean spawn(Player player, Location location, int count) {
 		return this.spawn(player, location, count, 0D, 0D, 0D, 0D);
 	}
 
-	/**
-	 * Sends the particle only to one player.
-	 */
 	public boolean spawn(Player player, Location location, int count, double offsetX,
 						 double offsetY, double offsetZ, double extra) {
 		Objects.requireNonNull(player, "player");
@@ -227,7 +221,7 @@ public final class RosaParticle {
 		return null;
 	}
 
-	private static void validate(Location location, int count, double offsetX, double offsetY,
+	private void validate(Location location, int count, double offsetX, double offsetY,
 								 double offsetZ, double extra) {
 		Objects.requireNonNull(location, "location");
 		if (count < 0) {
@@ -239,7 +233,7 @@ public final class RosaParticle {
 		requireNonNegativeFinite(extra, "Particle extra value");
 	}
 
-	private static void requireNonNegativeFinite(double value, String name) {
+	private void requireNonNegativeFinite(double value, String name) {
 		if (value < 0D || Double.isNaN(value) || Double.isInfinite(value)) {
 			throw new IllegalArgumentException(name + " must be a finite non-negative number");
 		}

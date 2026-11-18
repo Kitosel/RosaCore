@@ -331,7 +331,7 @@ public final class RosaConfig implements MutableConfig, ReloadableConfig {
 	@Override
 	public synchronized Set<String> getKeys(boolean deep) {
 		this.ensureLoaded();
-		return Collections.unmodifiableSet(new java.util.LinkedHashSet<>(this.active.getKeys(deep)));
+		return Collections.unmodifiableSet(new LinkedHashSet<>(this.active.getKeys(deep)));
 	}
 
 	@Override

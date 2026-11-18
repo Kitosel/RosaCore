@@ -17,7 +17,7 @@ public abstract class RosaHologram implements AutoCloseable {
 	public static final double DEFAULT_LINE_SPACING = 0.27D;
 
 	private final UUID id = UUID.randomUUID();
-	private final RosaHologramManager owner;
+	private final RosaHologramManager hologramManager;
 	private final RosaPlugin plugin;
 	private final LegacyColorizer colorizer;
 	private final List<String> lines = new ArrayList<>();
@@ -37,17 +37,17 @@ public abstract class RosaHologram implements AutoCloseable {
 	private boolean shown;
 	private boolean closed;
 
-	protected RosaHologram(RosaPlugin plugin, Location location) {
-		this.plugin = Objects.requireNonNull(plugin, "plugin");
+	protected RosaHologram(RosaPlugin plugin, Location location, RosaHologramManager hologramManager) {
+		this.plugin = plugin;
 		this.location = validateLocation(location).clone();
-		this.owner = plugin.getHolograms();
+		this.hologramManager = hologramManager;
 		this.colorizer = LegacyColorizer.forVersion(plugin.getMinecraftVersion());
 	}
 
 	protected abstract void onUpdate();
 
 	public final RosaHologram show() {
-		this.owner.show(this);
+		this.hologramManager.show(this);
 		return this;
 	}
 
@@ -217,7 +217,7 @@ public abstract class RosaHologram implements AutoCloseable {
 	}
 
 	public final boolean supportsTextDisplays() {
-		return this.owner.supportsTextDisplays();
+		return this.hologramManager.supportsTextDisplays();
 	}
 
 	public final UUID getId() {
@@ -242,12 +242,12 @@ public abstract class RosaHologram implements AutoCloseable {
 
 	@Override
 	public final void close() {
-		this.owner.forget(this);
+		this.hologramManager.forget(this);
 		closeFromManager();
 	}
 
-	protected RosaHologramManager getOwner() {
-		return this.owner;
+	protected RosaHologramManager getHologramManager() {
+		return this.hologramManager;
 	}
 
 	protected void openFromManager() {
@@ -304,7 +304,7 @@ public abstract class RosaHologram implements AutoCloseable {
 			despawnLines();
 			return;
 		}
-		HologramEntityFactory factory = this.owner.getEntityFactory();
+		HologramEntityFactory factory = this.hologramManager.getEntityFactory();
 		while (this.handles.size() > this.lines.size()) {
 			LineHandle removed = this.handles.remove(this.handles.size() - 1);
 			factory.remove(removed.entity);
@@ -314,14 +314,20 @@ public abstract class RosaHologram implements AutoCloseable {
 			String text = render(this.lines.get(line));
 			Location lineLocation = this.location.clone().subtract(0.0D, this.lineSpacing * line, 0.0D);
 			LineHandle handle = line < this.handles.size() ? this.handles.get(line) : null;
+
 			if (handle == null || !factory.isUsable(handle.entity)) {
 				if (handle != null) factory.remove(handle.entity);
+
 				Entity entity = factory.spawn(this.id, lineLocation, text,
 						this.shadowed, this.seeThrough, this.defaultBackground);
 				LineHandle replacement = new LineHandle(entity, lineLocation, text,
 						this.shadowed, this.seeThrough, this.defaultBackground);
-				if (handle == null) this.handles.add(replacement);
-				else this.handles.set(line, replacement);
+
+				if (handle == null) {
+					this.handles.add(replacement);
+				} else {
+					this.handles.set(line, replacement);
+				}
 				continue;
 			}
 			if (!handle.matches(lineLocation, text, this.shadowed, this.seeThrough, this.defaultBackground)) {
@@ -334,7 +340,7 @@ public abstract class RosaHologram implements AutoCloseable {
 	}
 
 	private void despawnLines() {
-		HologramEntityFactory factory = this.owner.getEntityFactory();
+		HologramEntityFactory factory = this.hologramManager.getEntityFactory();
 		for (LineHandle handle : this.handles) factory.remove(handle.entity);
 		this.handles.clear();
 		this.spawned = false;
@@ -342,6 +348,7 @@ public abstract class RosaHologram implements AutoCloseable {
 
 	private boolean isAnchorChunkLoaded() {
 		World world = this.location.getWorld();
+		if (world == null) return false;
 		return world.isChunkLoaded(this.location.getBlockX() >> 4, this.location.getBlockZ() >> 4);
 	}
 

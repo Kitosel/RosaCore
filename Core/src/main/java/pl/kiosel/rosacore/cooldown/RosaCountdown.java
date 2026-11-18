@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.RosaPlugin;
 import pl.kiosel.rosacore.message.MessagePlaceholders;
 import pl.kiosel.rosacore.message.RosaBossBar;
+import pl.kiosel.rosacore.message.RosaBossBarManager;
 import pl.kiosel.rosacore.scheduler.RosaScheduler;
 import pl.kiosel.rosacore.scheduler.RosaTask;
 
@@ -117,12 +118,12 @@ public final class RosaCountdown implements AutoCloseable {
 		), true));
 	}
 
-	public RosaCountdown bossBar(Player player, String message, Object... placeholders) {
-		return bossBar(player, message, RosaBossBar.Color.PURPLE, RosaBossBar.Style.SOLID,
+	public RosaCountdown bossBar(Player player, String message, RosaBossBarManager bossBarManager, Object... placeholders) {
+		return bossBar(player, message, bossBarManager, RosaBossBar.Color.PURPLE, RosaBossBar.Style.SOLID,
 				placeholders);
 	}
 
-	public synchronized RosaCountdown bossBar(Player player, String message,
+	public synchronized RosaCountdown bossBar(Player player, String message, RosaBossBarManager bossBarManager,
 											  RosaBossBar.Color color, RosaBossBar.Style style,
 											  Object... placeholders) {
 		ensureReady();
@@ -132,7 +133,8 @@ public final class RosaCountdown implements AutoCloseable {
 				Objects.requireNonNull(message, "message"),
 				Objects.requireNonNull(color, "color"),
 				Objects.requireNonNull(style, "style"),
-				copyPlaceholders(placeholders)
+				copyPlaceholders(placeholders),
+				bossBarManager
 		);
 		this.bossBarDisplays.add(display);
 		this.tickListeners.add(display::tick);
@@ -429,16 +431,18 @@ public final class RosaCountdown implements AutoCloseable {
 		private final RosaBossBar.Color color;
 		private final RosaBossBar.Style style;
 		private final Object[] placeholders;
+		private final RosaBossBarManager barManager;
 		private RosaBossBar bar;
 		private boolean closed;
 
 		private BossBarDisplay(Player player, String message, RosaBossBar.Color color,
-							   RosaBossBar.Style style, Object[] placeholders) {
+							   RosaBossBar.Style style, Object[] placeholders, RosaBossBarManager barManager) {
 			this.player = player;
 			this.message = message;
 			this.color = color;
 			this.style = style;
 			this.placeholders = placeholders;
+			this.barManager = barManager;
 		}
 
 		private void tick(int seconds) {
@@ -450,7 +454,7 @@ public final class RosaCountdown implements AutoCloseable {
 			float progress = seconds / (float) totalSeconds;
 			Object[] values = countdownPlaceholders(seconds, this.placeholders);
 			if (this.bar == null) {
-				this.bar = plugin.getBossBars().create(
+				this.bar = this.barManager.create(
 						this.message, progress, this.color, this.style, values).show(this.player);
 				return;
 			}

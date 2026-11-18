@@ -133,6 +133,10 @@ public abstract class PagedGui extends Gui {
 		return this;
 	}
 
+	public void forceExit() {
+		exit();
+	}
+
 	@Override
 	public PagedGui setItem(int slot, ItemStack item) {
 		super.setItem(slot, item);

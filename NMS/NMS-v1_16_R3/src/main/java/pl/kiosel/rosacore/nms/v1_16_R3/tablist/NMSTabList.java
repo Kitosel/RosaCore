@@ -8,6 +8,7 @@ import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.nms.api.NMSUtils;
+import pl.kiosel.rosacore.nms.api.packet.RosaPacketMarker;
 import pl.kiosel.rosacore.nms.api.tablist.TabList;
 import pl.kiosel.rosacore.nms.api.tablist.TabListCell;
 import pl.kiosel.rosacore.nms.api.tablist.TabListSkin;
@@ -98,20 +99,20 @@ final class NMSTabList implements TabList {
 
 	@Override
 	public TabListCell getCell(int slot) {
-		validateSlot(slot);
+		TabList.validateSlot(slot);
 		return cells[slot];
 	}
 
 	@Override
 	public TabList setCell(int slot, TabListCell cell) {
-		validateSlot(slot);
+		TabList.validateSlot(slot);
 		cells[slot] = cell;
 		return this;
 	}
 
 	@Override
 	public TabList clearCell(int slot) {
-		validateSlot(slot);
+		TabList.validateSlot(slot);
 		cells[slot] = null;
 		return this;
 	}
@@ -210,7 +211,7 @@ final class NMSTabList implements TabList {
 		for (int slot = 0; slot < cellCount; slot++) {
 			TabListCell cell = sourceCells[slot];
 			if (cell != null && !cell.isListed()) continue;
-			GameProfile profile = new GameProfile(profileId(slot, cell), profileName(slot, cell));
+			GameProfile profile = new GameProfile(TabList.profileId(slot, cell), TabList.profileName(slot, cell));
 			if (cell != null && cell.getSkin() != null) addSkin(profile, cell.getSkin());
 
 			EntityPlayer entry = new EntityPlayer(server, world, profile, new PlayerInteractManager(world));
@@ -266,8 +267,7 @@ final class NMSTabList implements TabList {
 	}
 
 	private void send(Packet<?> packet) {
-		((CraftPlayer) player).getHandle().playerConnection.sendPacket(
-				pl.kiosel.rosacore.nms.api.packet.RosaPacketMarker.mark(packet));
+		((CraftPlayer) player).getHandle().playerConnection.sendPacket(RosaPacketMarker.mark(packet));
 	}
 
 	private static void addSkin(GameProfile profile, TabListSkin skin) {
@@ -277,23 +277,5 @@ final class NMSTabList implements TabList {
 		profile.getProperties().put("textures", signature == null || signature.isEmpty()
 				? new Property("textures", value)
 				: new Property("textures", value, signature));
-	}
-
-	private static UUID profileId(int slot, TabListCell cell) {
-		if (cell != null && cell.getUniqueId() != null) return cell.getUniqueId();
-		return UUID.nameUUIDFromBytes(("rosacore:tablist:" + slot).getBytes(StandardCharsets.UTF_8));
-	}
-
-	private static String profileName(int slot, TabListCell cell) {
-		if (cell != null && cell.getProfileName() != null && !cell.getProfileName().isEmpty()) {
-			return cell.getProfileName();
-		}
-		return String.format("rosa%012d", slot);
-	}
-
-	private static void validateSlot(int slot) {
-		if (slot < 0 || slot >= DEFAULT_CELL_COUNT) {
-			throw new IllegalArgumentException("Tab-list slot must be between 0 and 79: " + slot);
-		}
 	}
 }

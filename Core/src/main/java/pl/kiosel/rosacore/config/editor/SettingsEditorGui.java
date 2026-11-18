@@ -1,4 +1,4 @@
-package pl.kiosel.rosacore.config.setting;
+package pl.kiosel.rosacore.config.editor;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -6,6 +6,9 @@ import org.bukkit.inventory.ItemStack;
 import pl.kiosel.rosacore.RosaPlugin;
 import pl.kiosel.rosacore.compatibility.ZMaterial;
 import pl.kiosel.rosacore.config.ConfigSaveResult;
+import pl.kiosel.rosacore.config.setting.RosaSettings;
+import pl.kiosel.rosacore.config.setting.SettingKey;
+import pl.kiosel.rosacore.config.setting.SettingValueException;
 import pl.kiosel.rosacore.gui.PagedGui;
 import pl.kiosel.rosacore.input.ChatInput;
 import pl.kiosel.rosacore.material.ItemCreator;

@@ -10,6 +10,8 @@ import java.util.*;
 
 public class PlayerUtils {
 
+	private PlayerUtils() {}
+
 	public static int getTotalExperience(Player player) {
 		Objects.requireNonNull(player, "player");
 		int level = player.getLevel();

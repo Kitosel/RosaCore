@@ -4,17 +4,21 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import net.minecraft.server.v1_15_R1.*;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import pl.kiosel.rosacore.nms.api.NMSUtils;
+import pl.kiosel.rosacore.nms.api.packet.RosaPacketMarker;
 import pl.kiosel.rosacore.nms.api.tablist.TabList;
 import pl.kiosel.rosacore.nms.api.tablist.TabListCell;
+import pl.kiosel.rosacore.nms.api.tablist.TabListDiff;
 import pl.kiosel.rosacore.nms.api.tablist.TabListSkin;
 
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -98,20 +102,20 @@ final class NMSTabList implements TabList {
 
 	@Override
 	public TabListCell getCell(int slot) {
-		validateSlot(slot);
+		TabList.validateSlot(slot);
 		return cells[slot];
 	}
 
 	@Override
 	public TabList setCell(int slot, TabListCell cell) {
-		validateSlot(slot);
+		TabList.validateSlot(slot);
 		cells[slot] = cell;
 		return this;
 	}
 
 	@Override
 	public TabList clearCell(int slot) {
-		validateSlot(slot);
+		TabList.validateSlot(slot);
 		cells[slot] = null;
 		return this;
 	}
@@ -141,8 +145,7 @@ final class NMSTabList implements TabList {
 	@Override
 	public TabList hideRealPlayer(UUID profileId) {
 		if (profileId == null || !player.isOnline()) return this;
-		TabListCell cell = TabListCell.profile(profileId, "removed", "", 0, null,
-				org.bukkit.GameMode.SURVIVAL, true);
+		TabListCell cell = TabListCell.profile(profileId, "removed", "", 0, null, GameMode.SURVIVAL, true);
 		EntityPlayer[] profiles = createProfiles(new TabListCell[]{cell}, 1);
 		if (profiles.length > 0) send(new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.REMOVE_PLAYER, profiles));
 		return this;
@@ -163,9 +166,8 @@ final class NMSTabList implements TabList {
 	@Override
 	public void send() {
 		if (!player.isOnline()) return;
-		TabListCell[] nextCells = java.util.Arrays.copyOf(cells, activeCellCount);
-		pl.kiosel.rosacore.nms.api.tablist.TabListDiff diff =
-				pl.kiosel.rosacore.nms.api.tablist.TabListDiff.between(renderedCells, nextCells);
+		TabListCell[] nextCells = Arrays.copyOf(cells, activeCellCount);
+		TabListDiff diff = TabListDiff.between(renderedCells, nextCells);
 		EntityPlayer[] nextProfiles = createProfiles();
 		if (renderedProfiles == null) {
 			hideRealProfiles();
@@ -210,14 +212,13 @@ final class NMSTabList implements TabList {
 		for (int slot = 0; slot < cellCount; slot++) {
 			TabListCell cell = sourceCells[slot];
 			if (cell != null && !cell.isListed()) continue;
-			GameProfile profile = new GameProfile(profileId(slot, cell), profileName(slot, cell));
+			GameProfile profile = new GameProfile(TabList.profileId(slot, cell), TabList.profileName(slot, cell));
 			if (cell != null && cell.getSkin() != null) addSkin(profile, cell.getSkin());
 
 			EntityPlayer entry = new EntityPlayer(server, world, profile, new PlayerInteractManager(world));
 			entry.ping = cell == null ? 0 : Math.max(0, cell.getPing());
 			entry.listName = new ChatComponentText(color(cell == null ? "" : cell.getText()));
-			pl.kiosel.rosacore.nms.api.NMSUtils.applyGameMode(entry,
-					cell == null ? org.bukkit.GameMode.SURVIVAL : cell.getGameMode());
+			NMSUtils.applyGameMode(entry, cell == null ? GameMode.SURVIVAL : cell.getGameMode());
 			profiles.add(entry);
 		}
 		return profiles.toArray(new EntityPlayer[0]);
@@ -260,14 +261,13 @@ final class NMSTabList implements TabList {
 			HEADER_FIELD.set(packet, new ChatComponentText(color(header)));
 			FOOTER_FIELD.set(packet, new ChatComponentText(color(footer)));
 		} catch (IllegalAccessException exception) {
-			throw new IllegalStateException("Could not set the v1_12_R1 tab-list footer", exception);
+			throw new IllegalStateException("Could not set the v1_15_R1 tab-list footer", exception);
 		}
 		send(packet);
 	}
 
 	private void send(Packet<?> packet) {
-		((CraftPlayer) player).getHandle().playerConnection.sendPacket(
-				pl.kiosel.rosacore.nms.api.packet.RosaPacketMarker.mark(packet));
+		((CraftPlayer) player).getHandle().playerConnection.sendPacket(RosaPacketMarker.mark(packet));
 	}
 
 	private static void addSkin(GameProfile profile, TabListSkin skin) {
@@ -277,23 +277,5 @@ final class NMSTabList implements TabList {
 		profile.getProperties().put("textures", signature == null || signature.isEmpty()
 				? new Property("textures", value)
 				: new Property("textures", value, signature));
-	}
-
-	private static UUID profileId(int slot, TabListCell cell) {
-		if (cell != null && cell.getUniqueId() != null) return cell.getUniqueId();
-		return UUID.nameUUIDFromBytes(("rosacore:tablist:" + slot).getBytes(StandardCharsets.UTF_8));
-	}
-
-	private static String profileName(int slot, TabListCell cell) {
-		if (cell != null && cell.getProfileName() != null && !cell.getProfileName().isEmpty()) {
-			return cell.getProfileName();
-		}
-		return String.format("rosa%012d", slot);
-	}
-
-	private static void validateSlot(int slot) {
-		if (slot < 0 || slot >= DEFAULT_CELL_COUNT) {
-			throw new IllegalArgumentException("Tab-list slot must be between 0 and 79: " + slot);
-		}
 	}
 }

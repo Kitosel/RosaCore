@@ -1,5 +1,6 @@
 package pl.kiosel.rosacore.hologram;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
@@ -59,7 +60,7 @@ final class HologramEntityFactory {
 		Location entityLocation = armorStandLocation(textLocation);
 		if (!entity.getLocation().equals(entityLocation)) entity.teleport(entityLocation);
 		ArmorStand armorStand = (ArmorStand) entity;
-		armorStand.setCustomName(HologramText.truncate(text, LEGACY_TEXT_LIMIT));
+		armorStand.setCustomName(truncate(text, LEGACY_TEXT_LIMIT));
 		armorStand.setCustomNameVisible(true);
 	}
 
@@ -69,6 +70,15 @@ final class HologramEntityFactory {
 
 	void remove(Entity entity) {
 		if (entity != null && !entity.isDead()) entity.remove();
+	}
+
+	String truncate(String text, int limit) {
+		if (text == null || text.length() <= limit) return text == null ? "" : text;
+		String result = text.substring(0, limit);
+		if (!result.isEmpty() && result.charAt(result.length() - 1) == ChatColor.COLOR_CHAR) {
+			result = result.substring(0, result.length() - 1);
+		}
+		return result;
 	}
 
 	private ArmorStand spawnArmorStand(Location textLocation, String text) {
@@ -82,7 +92,7 @@ final class HologramEntityFactory {
 			armorStand.setArms(false);
 			armorStand.setCanPickupItems(false);
 			armorStand.setRemoveWhenFarAway(false);
-			armorStand.setCustomName(HologramText.truncate(text, LEGACY_TEXT_LIMIT));
+			armorStand.setCustomName(truncate(text, LEGACY_TEXT_LIMIT));
 			armorStand.setCustomNameVisible(true);
 			return armorStand;
 		} catch (RuntimeException | Error exception) {

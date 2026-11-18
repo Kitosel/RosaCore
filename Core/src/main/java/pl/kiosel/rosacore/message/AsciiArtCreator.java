@@ -9,8 +9,8 @@ import java.util.logging.Logger;
 
 public final class AsciiArtCreator {
 
-	private static final int FONT_HEIGHT = 2;
-	private static final Map<Character, String[]> FONT = createFont();
+	private final int FONT_HEIGHT = 2;
+	private final Map<Character, String[]> FONT = createFont();
 
 	private final List<String> lines = new ArrayList<>();
 	private String glyphSeparator = " ";
@@ -101,7 +101,7 @@ public final class AsciiArtCreator {
 		return this.build();
 	}
 
-	private static List<String> render(String text, String separator) {
+	private List<String> render(String text, String separator) {
 		String normalized = normalize(text);
 		List<StringBuilder> rows = new ArrayList<>(FONT_HEIGHT);
 		for (int row = 0; row < FONT_HEIGHT; row++) {
@@ -124,7 +124,7 @@ public final class AsciiArtCreator {
 		return rendered;
 	}
 
-	private static String normalize(String text) {
+	private String normalize(String text) {
 		String normalized = Normalizer.normalize(text, Normalizer.Form.NFD)
 				.replaceAll("\\p{M}+", "")
 				.toUpperCase(Locale.ROOT);
@@ -142,7 +142,7 @@ public final class AsciiArtCreator {
 				.replace('Ń', 'N');
 	}
 
-	private static Map<Character, String[]> createFont() {
+	private Map<Character, String[]> createFont() {
 		Map<Character, String[]> font = new LinkedHashMap<>();
 		glyph(font, 'A', "▄▀█", "█▀█");
 		glyph(font, 'B', "█▄▄", "█▄█");
@@ -200,7 +200,7 @@ public final class AsciiArtCreator {
 		return Collections.unmodifiableMap(font);
 	}
 
-	private static void glyph(Map<Character, String[]> font, char character,
+	private void glyph(Map<Character, String[]> font, char character,
 							  String top, String bottom) {
 		font.put(character, new String[]{top, bottom});
 	}

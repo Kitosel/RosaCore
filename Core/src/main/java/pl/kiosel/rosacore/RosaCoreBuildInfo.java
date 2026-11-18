@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+/*
+  A method that retrieves the core version, allowing the plugin to determine which core version is being used; useful for debugging
+*/
 final class RosaCoreBuildInfo {
 
 	private static final String RESOURCE = "META-INF/rosacore/version.properties";

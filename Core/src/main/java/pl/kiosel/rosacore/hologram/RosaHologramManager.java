@@ -15,14 +15,11 @@ import java.util.*;
 
 public final class RosaHologramManager implements Listener, AutoCloseable {
 
-	@Getter
-	private final RosaPlugin plugin;
 	private final HologramEntityFactory entityFactory;
 	private final Map<UUID, RosaHologram> active = new LinkedHashMap<>();
 	@Getter private boolean closed;
 
 	public RosaHologramManager(RosaPlugin plugin) {
-		this.plugin = Objects.requireNonNull(plugin, "plugin");
 		this.entityFactory = new HologramEntityFactory(plugin);
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 	}
@@ -104,7 +101,7 @@ public final class RosaHologramManager implements Listener, AutoCloseable {
 	void show(RosaHologram hologram) {
 		synchronized (this) {
 			ensureOpen();
-			if (hologram.getOwner() != this) {
+			if (hologram.getHologramManager() != this) {
 				throw new IllegalArgumentException("The hologram belongs to another RosaHologramManager");
 			}
 			if (this.active.get(hologram.getId()) == hologram) {
